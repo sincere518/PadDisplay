@@ -16,18 +16,16 @@ import SwiftUI
             }
         }
         Window("关于 PadDisplay", id: "about") { AboutView() }.windowResizability(.contentSize)
-        MenuBarExtra(model.isValidation ? "PadDisplay UI验证" : "PadDisplay", systemImage: "display.2") { MenuContent(model: model) }
+        MenuBarExtra("PadDisplay", systemImage: "display.2") { MenuContent(model: model) }
         Settings { SettingsView(model: model) }
     }
 }
 
 @MainActor final class AppDelegate: NSObject, NSApplicationDelegate {
     private var terminating = false
-    private var displayTest: DisplaySelfTest?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        if !AppController.shared.isValidation,
-           let existing = NSRunningApplication.runningApplications(withBundleIdentifier: "local.PadDisplay")
+        if let existing = NSRunningApplication.runningApplications(withBundleIdentifier: "local.PadDisplay")
             .first(where: { $0.processIdentifier != ProcessInfo.processInfo.processIdentifier }) {
             existing.activate()
             terminating = true
@@ -37,11 +35,6 @@ import SwiftUI
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
         let args = CommandLine.arguments
-        if AppController.shared.isValidation {
-            NSApp.appearance = NSAppearance(named: args.contains("dark") ? .darkAqua : .aqua)
-            AppController.shared.start()
-            return
-        }
         if let index = args.firstIndex(of: "--diagnose"), index + 1 < args.count {
             let reader = UUConnectionReader()
             reader.sample { reading in
@@ -52,21 +45,6 @@ import SwiftUI
                 self.terminating = true
                 NSApp.terminate(nil)
             }
-            return
-        }
-        if let index = args.firstIndex(of: "--display-self-test"), index + 1 < args.count {
-            guard !AppController.shared.companionRunning else {
-                Diagnostics.write(["success": false, "error": "请先退出 UU伴侣再自测"],
-                                  to: URL(fileURLWithPath: args[index + 1]))
-                terminating = true
-                NSApp.terminate(nil)
-                return
-            }
-            displayTest = DisplaySelfTest(output: URL(fileURLWithPath: args[index + 1])) {
-                self.terminating = true
-                NSApp.terminate(nil)
-            }
-            displayTest?.run()
             return
         }
         AppController.shared.start()

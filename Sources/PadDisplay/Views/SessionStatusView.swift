@@ -11,7 +11,7 @@ struct SessionStatusView: View {
         case .permission: "允许 PadDisplay 读取 UU远程的连接设备名称，也可以先手动应用配置。"
         case .unconfigured: "请确认「\(model.controllers.first ?? "新设备")」的屏幕尺寸。"
         case .recoveryFailed, .failed: model.report.message
-        case .companion: "请先退出 UU伴侣，再由 PadDisplay 调整屏幕。"
+        case .companion: "请先退出其他显示助手，再由 PadDisplay 调整屏幕。"
         case .disabled: "可手动应用屏幕配置，或重新打开自动匹配。"
         case .inactive: "此设备的配置已保存，连入时保持原桌面。"
         case .waiting: "设备连入后按已保存的配置匹配，断开后恢复原桌面。"

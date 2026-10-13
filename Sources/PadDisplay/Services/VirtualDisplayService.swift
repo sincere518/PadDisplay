@@ -30,8 +30,7 @@ final class VirtualDisplayService {
     static let supportDirectory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         .appendingPathComponent("PadDisplay", isDirectory: true)
     private let queue = DispatchQueue(label: "local.PadDisplay.displays")
-    private let journal: URL
-    private let readDisplays: () throws -> [CGDirectDisplayID]
+    private let journal = VirtualDisplayService.supportDirectory.appendingPathComponent("display-session.json")
     private var desired: DisplayRequest?
     private var current: DisplayRequest?
     private var busy = false
@@ -44,12 +43,6 @@ final class VirtualDisplayService {
     private var positions: [SavedPosition] = []
     private var configurationStalled = false
     var onChange: ((DisplayReport) -> Void)?
-
-    init(supportDirectory: URL = VirtualDisplayService.supportDirectory,
-         readDisplays: @escaping () throws -> [CGDirectDisplayID] = VirtualDisplayService.readOnlineDisplays) {
-        journal = supportDirectory.appendingPathComponent("display-session.json")
-        self.readDisplays = readDisplays
-    }
 
     static func displays() -> [CGDirectDisplayID] {
         (try? readOnlineDisplays()) ?? []
@@ -149,7 +142,7 @@ final class VirtualDisplayService {
 
     private func create(_ request: DisplayRequest) throws {
         if let problem = request.spec.validationError { throw failure(problem) }
-        positions = try readDisplays().map { id in
+        positions = try Self.readOnlineDisplays().map { id in
             let origin = CGDisplayBounds(id).origin
             return SavedPosition(id: id, vendor: CGDisplayVendorNumber(id), model: CGDisplayModelNumber(id),
                                  serial: CGDisplaySerialNumber(id), x: Int32(origin.x), y: Int32(origin.y))
@@ -165,12 +158,12 @@ final class VirtualDisplayService {
         }
         let id = PDDisplayID(handle)
         Thread.sleep(forTimeInterval: 3)
-        guard try readDisplays().contains(id), let mode = CGDisplayCopyDisplayMode(id),
+        guard try Self.readOnlineDisplays().contains(id), let mode = CGDisplayCopyDisplayMode(id),
               mode.pixelWidth == spec.width, mode.pixelHeight == spec.height else {
             throw failure("虚拟屏幕未以目标分辨率上线。")
         }
         let origin = CGDisplayBounds(id).origin
-        let online = try readDisplays()
+        let online = try Self.readOnlineDisplays()
         try configure { config in
             for display in online {
                 let p = CGDisplayBounds(display).origin
@@ -194,13 +187,13 @@ final class VirtualDisplayService {
             PDDisplayRelease(handle)
             self.handle = nil
             Thread.sleep(forTimeInterval: 1.5)
-            guard try !readDisplays().contains(id) else { throw failure("虚拟屏幕尚未移除，请稍后重试恢复。") }
+            guard try !Self.readOnlineDisplays().contains(id) else { throw failure("虚拟屏幕尚未移除，请稍后重试恢复。") }
         }
         try restorePositions()
     }
 
     private func restorePositions() throws {
-        let available = positions.isEmpty ? [] : Set(try readDisplays())
+        let available = positions.isEmpty ? [] : Set(try Self.readOnlineDisplays())
         let targets = positions.filter { p in
             available.contains(p.id) && CGDisplayVendorNumber(p.id) == p.vendor &&
             CGDisplayModelNumber(p.id) == p.model && CGDisplaySerialNumber(p.id) == p.serial

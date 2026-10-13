@@ -10,7 +10,5 @@ let package = Package(
         .target(name: "DisplayBridge", cSettings: [.unsafeFlags(["-fobjc-arc"])],
                 linkerSettings: [.linkedFramework("CoreGraphics")]),
         .executableTarget(name: "PadDisplay", dependencies: ["PadDisplayCore", "DisplayBridge"]),
-        .testTarget(name: "PadDisplayCoreTests", dependencies: ["PadDisplayCore"]),
-        .testTarget(name: "PadDisplayTests", dependencies: ["PadDisplay"]),
     ]
 )

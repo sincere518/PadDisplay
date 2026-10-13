@@ -7,9 +7,7 @@ MODE="${1:-run}"
 CONFIGURATION="${CONFIGURATION:-debug}"
 APP_BUNDLE="$ROOT_DIR/dist/PadDisplay.app"
 APP_BINARY="$APP_BUNDLE/Contents/MacOS/PadDisplay"
-VERSION=0.2.2
-PREVIEW_BUNDLE="$ROOT_DIR/build/UIValidation/PadDisplay UI验证.app"
-PREVIEW_BINARY="$PREVIEW_BUNDLE/Contents/MacOS/PadDisplay"
+VERSION=0.2.3
 if [[ -z "${DEVELOPER_DIR:-}" && -d /Applications/Xcode-beta.app/Contents/Developer ]]; then
   export DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer
 fi
@@ -19,16 +17,12 @@ mkdir -p build
 LAUNCH=false
 case "$MODE" in
   run|--debug|--logs|--telemetry|--verify) LAUNCH=true ;;
-  --build|--package|--preview) ;;
-  *) echo "Usage: $0 [run|--build|--package|--preview [scenario] [light|dark]|--debug|--logs|--telemetry|--verify]" >&2; exit 2 ;;
+  --build|--package) ;;
+  *) echo "Usage: $0 [run|--build|--package|--debug|--logs|--telemetry|--verify]" >&2; exit 2 ;;
 esac
 STAGED_PIDS=()
 for pid in $(pgrep -x PadDisplay || true); do
   process_path="$(ps -p "$pid" -o comm= 2>/dev/null || true)"
-  if [[ "$MODE" == "--preview" && "$process_path" == "$PREVIEW_BINARY" ]]; then
-    echo "UI验证实例仍在运行，请先从该实例中退出，再启动其他场景。" >&2
-    exit 1
-  fi
   if [[ "$process_path" == "$APP_BINARY" ]]; then
     if [[ "$LAUNCH" == false ]]; then
       echo "请先退出项目目录中的 PadDisplay，再重新构建或打包。" >&2
@@ -88,7 +82,7 @@ cat > "$APP_BUNDLE/Contents/Info.plist" <<PLIST
 <key>CFBundleExecutable</key><string>PadDisplay</string>
 <key>CFBundlePackageType</key><string>APPL</string>
 <key>CFBundleShortVersionString</key><string>$VERSION</string>
-<key>CFBundleVersion</key><string>5</string>
+<key>CFBundleVersion</key><string>6</string>
 <key>CFBundleIconFile</key><string>AppIcon</string>
 <key>LSMinimumSystemVersion</key><string>14.0</string>
 <key>NSHighResolutionCapable</key><true/>
@@ -100,16 +94,6 @@ codesign --verify --strict --deep "$APP_BUNDLE"
 
 case "$MODE" in
   --build) ;;
-  --preview)
-    mkdir -p "$(dirname "$PREVIEW_BUNDLE")"
-    rm -rf "$PREVIEW_BUNDLE"
-    ditto "$APP_BUNDLE" "$PREVIEW_BUNDLE"
-    /usr/libexec/PlistBuddy -c 'Set :CFBundleIdentifier local.PadDisplay.UIValidation' "$PREVIEW_BUNDLE/Contents/Info.plist"
-    /usr/libexec/PlistBuddy -c 'Set :CFBundleName PadDisplay UI验证' "$PREVIEW_BUNDLE/Contents/Info.plist"
-    /usr/libexec/PlistBuddy -c 'Set :CFBundleDisplayName PadDisplay UI验证' "$PREVIEW_BUNDLE/Contents/Info.plist"
-    codesign --force --sign - --options runtime "$PREVIEW_BUNDLE"
-    /usr/bin/open -n "$PREVIEW_BUNDLE" --args --ui-preview "${2:-ready}" --appearance "${3:-light}"
-    ;;
   --package)
     ditto -c -k --keepParent "$APP_BUNDLE" "$ROOT_DIR/dist/PadDisplay-$VERSION-arm64.zip"
     (cd "$ROOT_DIR/dist" && shasum -a 256 PadDisplay-*-arm64.zip) > "$ROOT_DIR/dist/SHA256SUMS.txt"

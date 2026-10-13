@@ -1,8 +1,0 @@
-{
-  "version": "0.2.1",
-  "build": 4,
-  "zip_sha256": "b353ce5612160201bc392b35373efb2dcbd64d42130a53910431660e276f25c4",
-  "zip_matches_staged_binary": true,
-  "frame_resource_unchanged": true,
-  "installed_binary_unchanged": true
-}

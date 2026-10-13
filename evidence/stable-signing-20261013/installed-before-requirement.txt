@@ -1,2 +1,0 @@
-Executable=/Applications/PadDisplay.app/Contents/MacOS/PadDisplay
-# designated => cdhash H"7abf9d76dacc7530e7e5e97892e5dbc9c3ebdaae"

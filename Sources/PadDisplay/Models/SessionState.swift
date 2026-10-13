@@ -17,7 +17,7 @@ enum SessionState: Equatable {
         case .disabled: "自动匹配已关闭"
         case .failed: "显示调整未完成"
         case .recoveryFailed: "原桌面尚未恢复"
-        case .companion: "UU伴侣正在调整显示器"
+        case .companion: "其他显示助手正在运行"
         }
     }
 

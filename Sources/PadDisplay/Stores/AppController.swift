@@ -6,16 +6,8 @@ import ServiceManagement
 
 @MainActor @Observable
 final class AppController {
-    static let shared: AppController = {
-        let args = CommandLine.arguments
-        let scenario = args.firstIndex(of: "--ui-preview").map { index in
-            index + 1 < args.count ? args[index + 1] : "ready"
-        }
-        return AppController(validationScenario: scenario)
-    }()
-    private let preferences: UserDefaults
-    private let validationDomain: String?
-    let validationScenario: String?
+    static let shared = AppController()
+    private let preferences = UserDefaults.standard
     private let reader = UUConnectionReader()
     let display = VirtualDisplayService()
     private var tracker = ConnectionTracker()
@@ -41,7 +33,6 @@ final class AppController {
     }
     private(set) var loginEnabled = SMAppService.mainApp.status == .enabled
 
-    var isValidation: Bool { validationScenario != nil }
     var sessionPaused: Bool { suspended }
     var manualMode: Bool { manual != nil }
     var connectionCount: Int { tracker.controllerCount }
@@ -60,32 +51,22 @@ final class AppController {
     }
 
     var companionRunning: Bool {
-        if isValidation { return validationScenario == "companion" }
         return !NSRunningApplication.runningApplications(withBundleIdentifier: "com.corndog.uudisplay").isEmpty
     }
 
-    init(preferences supplied: UserDefaults? = nil, validationScenario: String? = nil) {
-        self.validationScenario = validationScenario
-        let domain = validationScenario == nil || supplied != nil ? nil : "local.PadDisplay.UIValidation.\(UUID())"
-        validationDomain = domain
-        preferences = supplied ?? domain.flatMap(UserDefaults.init(suiteName:)) ?? .standard
+    init() {
         automatic = preferences.object(forKey: "automatic") as? Bool ?? true
         if let data = preferences.data(forKey: "profiles"),
            let saved = try? JSONDecoder().decode([DeviceProfile].self, from: data) {
             profiles = saved
         } else {
             profiles = [DeviceProfile(name: "iPad Air (13 英寸, M2)", spec: ScreenPreset.all[0].spec)]
-            if isValidation {
-                profiles.append(DeviceProfile(name: "iPhone 17 Pro Max", spec: ScreenPreset.all.last!.spec))
-            }
         }
-        if isValidation { permissionGranted = true; loginEnabled = false }
     }
 
     func start() {
         guard !started else { return }
         started = true
-        if let validationScenario { configureValidation(validationScenario); return }
         display.onChange = { [weak self] in self?.report = $0 }
         display.recover()
         poll()
@@ -130,60 +111,57 @@ final class AppController {
     }
 
     func useManually(_ profile: DeviceProfile) {
-        guard !companionRunning else { notice = "请先退出 UU伴侣，避免两个软件同时调整显示器。"; return }
+        guard !companionRunning else { notice = "请先退出其他显示助手，避免同时调整显示器。"; return }
         guard save(profile), profile.enabled, profile.spec.validationError == nil else { return }
         manual = DisplayRequest(name: profile.name, spec: profile.spec)
         suspended = false
-        requestDisplay(manual, retry: true)
+        display.request(manual, retry: true)
     }
 
     func restore() {
         manual = nil
         suspended = true
         notice = nil
-        requestDisplay(nil, retry: true)
+        display.request(nil, retry: true)
     }
 
     func resumeAutomatic() { automatic = true }
 
     private func updateDisplay() {
         if companionRunning {
-            connectionStatus = "请先退出 UU伴侣，避免同时调整显示器"
-            requestDisplay(nil)
+            connectionStatus = "请先退出其他显示助手，避免同时调整显示器"
+            display.request(nil)
             return
         }
-        if let manual { requestDisplay(manual); return }
-        guard automatic, !suspended else { requestDisplay(nil); return }
+        if let manual { display.request(manual); return }
+        guard automatic, !suspended else { display.request(nil); return }
         switch DeviceDecision.resolve(names: controllers, controllerCount: tracker.controllerCount, profiles: profiles) {
         case .use(let profile):
-            if let error = profile.spec.validationError { notice = error; requestDisplay(nil) }
-            else { requestDisplay(.init(name: profile.name, spec: profile.spec)) }
+            if let error = profile.spec.validationError { notice = error; display.request(nil) }
+            else { display.request(.init(name: profile.name, spec: profile.spec)) }
         case .configure(let name):
             connectionStatus = "新设备「\(name)」需要配置屏幕尺寸"
-            requestDisplay(nil)
+            display.request(nil)
         case .simultaneous:
             connectionStatus = "多个设备同时连入，请保留一个连接后调整"
-            requestDisplay(nil)
+            display.request(nil)
         case .idle:
-            requestDisplay(nil)
+            display.request(nil)
         }
     }
 
     func openPermissions() {
-        if isValidation { permissionGranted = true; return }
         NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
         AXIsProcessTrustedWithOptions([kAXTrustedCheckOptionPrompt.takeUnretainedValue(): true] as CFDictionary)
     }
 
     func openUU() {
-        if isValidation { notice = "隔离验证实例不会打开其他应用。"; return }
         if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.netease.uuremote") {
             NSWorkspace.shared.openApplication(at: url, configuration: .init())
         } else { notice = "请先安装并打开 UU远程。" }
     }
 
     func setLogin(_ enabled: Bool) {
-        if isValidation { loginEnabled = enabled; return }
         do {
             if enabled { try SMAppService.mainApp.register() }
             else { try SMAppService.mainApp.unregister() }
@@ -195,11 +173,6 @@ final class AppController {
     func shutdown(_ completion: @escaping () -> Void) {
         timer?.invalidate()
         started = false
-        if isValidation {
-            if let validationDomain { preferences.removePersistentDomain(forName: validationDomain) }
-            completion()
-            return
-        }
         display.shutdown(completion)
     }
 
@@ -218,28 +191,6 @@ final class AppController {
             discovered = []
         }
         updateDisplay()
-    }
-
-    private func requestDisplay(_ request: DisplayRequest?, retry: Bool = false) {
-        guard isValidation else { display.request(request, retry: retry); return }
-        report = .init(active: request, message: request == nil ? "已恢复原桌面" : "远程屏幕已就绪")
-    }
-
-    /// 隔离的原生 UI 验证：独立偏好域，不读取连接、不操作显示器或登录项。
-    private func configureValidation(_ scenario: String) {
-        let pad = profiles[0].name
-        let names: [String] = switch scenario {
-        case "idle", "permission": []
-        case "phone": ["iPhone 17 Pro Max"]
-        case "multiple": [pad, "iPhone 17 Pro Max"]
-        case "unknown": ["我的手机"]
-        default: [pad]
-        }
-        permissionGranted = scenario != "permission"
-        received(.init(controllers: names, detail: names.isEmpty ? "等待远程设备连接" : "已识别连接设备", controllerCount: names.count))
-        if scenario == "paused" { restore() }
-        if scenario == "busy" { report = .init(busy: true, message: "正在准备远程屏幕…") }
-        if scenario == "failed" { report = .init(message: "恢复记录已保留，请重试。", failed: true, recoveryNeeded: true) }
     }
 
     private func persist() {
