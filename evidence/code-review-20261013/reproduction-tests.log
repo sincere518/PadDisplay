@@ -1,0 +1,67 @@
+[0/1] Planning build
+Building for debugging...
+[0/9] Write sources
+[4/9] Write swift-version-39B54973F684ADAB.txt
+[6/11] Compiling PadDisplayCore DeviceProfile.swift
+[7/11] Emitting module PadDisplayCore
+[8/12] Compiling PadDisplayCore ConnectionPolicy.swift
+[9/22] Emitting module PadDisplayCoreTests
+[10/22] Compiling PadDisplayCoreTests ConnectionTests.swift
+[11/22] Compiling PadDisplay ContentView.swift
+[12/22] Emitting module PadDisplay
+[13/22] Compiling PadDisplay VirtualDisplayService.swift
+[14/22] Compiling PadDisplay ProfileEditor.swift
+[15/22] Compiling PadDisplay AppController.swift
+[16/22] Compiling PadDisplay MenuContent.swift
+[17/22] Compiling PadDisplay PadDisplayApp.swift
+[18/22] Compiling PadDisplay UUConnectionReader.swift
+[19/23] Compiling PadDisplay Diagnostics.swift
+[19/24] Write Objects.LinkFileList
+[20/24] Linking PadDisplay
+[21/24] Applying PadDisplay
+[23/26] Compiling PadDisplayTests RecoveryTests.swift
+[24/26] Emitting module PadDisplayTests
+[25/28] Emitting module PadDisplayPackageTests
+[26/28] Compiling PadDisplayPackageTests runner.swift
+[26/28] Write Objects.LinkFileList
+[27/28] Linking PadDisplayPackageTests
+Build complete! (4.73s)
+warning: '--build-system native' has been deprecated and will be removed in a future release; please report an issue at https://github.com/swiftlang/swift-package-manager/issues if you are unable to adopt the default build system.
+Test Suite 'All tests' started at 2026-10-13 13:03:55.950.
+Test Suite 'PadDisplayPackageTests.xctest' started at 2026-10-13 13:03:55.951.
+Test Suite 'ConnectionTests' started at 2026-10-13 13:03:55.951.
+Test Case '-[PadDisplayCoreTests.ConnectionTests testDisabledDeviceCanIgnoreInvalidHiddenSizeFields]' started.
+/Volumes/数据盘/项目文件/远程分辨率调整插件/Tests/PadDisplayCoreTests/ConnectionTests.swift:67: error: -[PadDisplayCoreTests.ConnectionTests testDisabledDeviceCanIgnoreInvalidHiddenSizeFields] : XCTAssertEqual failed: ("nil") is not equal to ("Optional(PadDisplayCore.DeviceProfile(id: 5DC660F8-CF43-4E4D-A8FF-8D4F849B1275, name: "MacBook", enabled: false, spec: PadDisplayCore.DisplaySpec(width: 2732, height: 2048, hiDPI: true)))")
+Test Case '-[PadDisplayCoreTests.ConnectionTests testDisabledDeviceCanIgnoreInvalidHiddenSizeFields]' failed (0.702 seconds).
+Test Case '-[PadDisplayCoreTests.ConnectionTests testEnabledDeviceRejectsNonNumericSizeInput]' started.
+Test Case '-[PadDisplayCoreTests.ConnectionTests testEnabledDeviceRejectsNonNumericSizeInput]' passed (0.000 seconds).
+Test Case '-[PadDisplayCoreTests.ConnectionTests testObservedUURemote442Row]' started.
+Test Case '-[PadDisplayCoreTests.ConnectionTests testObservedUURemote442Row]' passed (0.001 seconds).
+Test Case '-[PadDisplayCoreTests.ConnectionTests testProfilesDoNotFallbackToAnotherDevice]' started.
+Test Case '-[PadDisplayCoreTests.ConnectionTests testProfilesDoNotFallbackToAnotherDevice]' passed (0.000 seconds).
+Test Case '-[PadDisplayCoreTests.ConnectionTests testSeparateFieldsAndFalsePositives]' started.
+Test Case '-[PadDisplayCoreTests.ConnectionTests testSeparateFieldsAndFalsePositives]' passed (0.000 seconds).
+Test Case '-[PadDisplayCoreTests.ConnectionTests testSwitchDeviceAndDebouncedDisconnect]' started.
+Test Case '-[PadDisplayCoreTests.ConnectionTests testSwitchDeviceAndDebouncedDisconnect]' passed (0.000 seconds).
+Test Case '-[PadDisplayCoreTests.ConnectionTests testUnambiguousModelPresetsAndDimensions]' started.
+Test Case '-[PadDisplayCoreTests.ConnectionTests testUnambiguousModelPresetsAndDimensions]' passed (0.001 seconds).
+Test Case '-[PadDisplayCoreTests.ConnectionTests testUnavailableAndDuplicateDeviceNames]' started.
+Test Case '-[PadDisplayCoreTests.ConnectionTests testUnavailableAndDuplicateDeviceNames]' passed (0.000 seconds).
+Test Suite 'ConnectionTests' failed at 2026-10-13 13:03:56.656.
+	 Executed 8 tests, with 1 failure (0 unexpected) in 0.704 (0.705) seconds
+Test Suite 'RecoveryTests' started at 2026-10-13 13:03:56.656.
+Test Case '-[PadDisplayTests.RecoveryTests testRetryDoesNotClaimCorruptJournalWasRestored]' started.
+/Volumes/数据盘/项目文件/远程分辨率调整插件/Tests/PadDisplayTests/RecoveryTests.swift:30: error: -[PadDisplayTests.RecoveryTests testRetryDoesNotClaimCorruptJournalWasRestored] : XCTAssertTrue failed - 损坏记录尚未恢复时不能显示成功
+Test Case '-[PadDisplayTests.RecoveryTests testRetryDoesNotClaimCorruptJournalWasRestored]' failed (0.004 seconds).
+Test Suite 'RecoveryTests' failed at 2026-10-13 13:03:56.660.
+	 Executed 1 test, with 1 failure (0 unexpected) in 0.004 (0.004) seconds
+Test Suite 'PadDisplayPackageTests.xctest' failed at 2026-10-13 13:03:56.660.
+	 Executed 9 tests, with 2 failures (0 unexpected) in 0.708 (0.709) seconds
+Test Suite 'All tests' failed at 2026-10-13 13:03:56.660.
+	 Executed 9 tests, with 2 failures (0 unexpected) in 0.708 (0.710) seconds
+◇ Test run started.
+↳ Testing Library Version: 2078
+↳ Target Platform: arm64e-apple-macos14.0
+✔ Test run with 0 tests in 0 suites passed after 0.001 seconds.
+Note: Some test targets reported failures:
+  - PadDisplayPackageTests (XCTest)

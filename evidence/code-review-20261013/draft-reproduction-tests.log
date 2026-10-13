@@ -1,0 +1,38 @@
+[0/1] Planning build
+Building for debugging...
+[0/7] Write sources
+[3/7] Write swift-version-39B54973F684ADAB.txt
+[5/9] Compiling PadDisplayCore DeviceProfile.swift
+[6/9] Emitting module PadDisplayCore
+[7/10] Compiling PadDisplayCore ConnectionPolicy.swift
+[8/18] Compiling PadDisplayCoreTests ConnectionTests.swift
+[9/18] Emitting module PadDisplayCoreTests
+[10/18] Emitting module PadDisplay
+[11/18] Compiling PadDisplay ContentView.swift
+[12/18] Compiling PadDisplay PadDisplayApp.swift
+[13/18] Compiling PadDisplay AppController.swift
+[14/18] Compiling PadDisplay MenuContent.swift
+[15/18] Compiling PadDisplay ProfileEditor.swift
+[15/20] Write Objects.LinkFileList
+[16/20] Linking PadDisplay
+[17/20] Applying PadDisplay
+[19/21] Emitting module PadDisplayTests
+[19/21] Write Objects.LinkFileList
+[20/21] Linking PadDisplayPackageTests
+Build complete! (3.68s)
+warning: '--build-system native' has been deprecated and will be removed in a future release; please report an issue at https://github.com/swiftlang/swift-package-manager/issues if you are unable to adopt the default build system.
+Test Suite 'Selected tests' started at 2026-10-13 13:28:55.659.
+Test Suite 'PadDisplayPackageTests.xctest' started at 2026-10-13 13:28:55.660.
+Test Suite 'ConnectionTests' started at 2026-10-13 13:28:55.660.
+Test Case '-[PadDisplayCoreTests.ConnectionTests testAddingUnknownDeviceDoesNotActivateUnconfirmedDimensions]' started.
+/Volumes/数据盘/项目文件/远程分辨率调整插件/Tests/PadDisplayCoreTests/ConnectionTests.swift:117: error: -[PadDisplayCoreTests.ConnectionTests testAddingUnknownDeviceDoesNotActivateUnconfirmedDimensions] : XCTAssertFalse failed
+/Volumes/数据盘/项目文件/远程分辨率调整插件/Tests/PadDisplayCoreTests/ConnectionTests.swift:118: error: -[PadDisplayCoreTests.ConnectionTests testAddingUnknownDeviceDoesNotActivateUnconfirmedDimensions] : XCTAssertEqual failed: ("use(PadDisplayCore.DeviceProfile(id: F5FFA670-00A9-45AB-BD30-38C189942704, name: "我的手机", enabled: true, spec: PadDisplayCore.DisplaySpec(width: 2732, height: 2048, hiDPI: true)))") is not equal to ("idle")
+Test Case '-[PadDisplayCoreTests.ConnectionTests testAddingUnknownDeviceDoesNotActivateUnconfirmedDimensions]' failed (0.595 seconds).
+Test Suite 'ConnectionTests' failed at 2026-10-13 13:28:56.255.
+	 Executed 1 test, with 2 failures (0 unexpected) in 0.595 (0.595) seconds
+Test Suite 'PadDisplayPackageTests.xctest' failed at 2026-10-13 13:28:56.255.
+	 Executed 1 test, with 2 failures (0 unexpected) in 0.595 (0.595) seconds
+Test Suite 'Selected tests' failed at 2026-10-13 13:28:56.255.
+	 Executed 1 test, with 2 failures (0 unexpected) in 0.595 (0.597) seconds
+Note: Some test targets reported failures:
+  - PadDisplayPackageTests (XCTest)

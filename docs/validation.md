@@ -12,7 +12,7 @@
 - 原生 UI 已打开并读取，设备配置、尺寸、高清开关、手动应用、恢复和授权入口均存在。
 - App 结构、Info.plist 和 ad-hoc 代码签名验证通过。
 
-真实显示器测试的原始数据：[display-self-test.json](../evidence/display-self-test.json)。构建日志在本地 `build/test.log`、`build/package.log`（不进入源码版本）。
+真实显示器测试的原始数据：[display-self-test.json](../evidence/display-self-test.json)。该版本的测试与构建日志已归档至 [release-0.1.0](../evidence/release-0.1.0/)，构建缓存已清理。
 
 ## 真实 UU连接验证
 
@@ -39,3 +39,7 @@
 ## 材料边界
 
 这是本机可安装、已验证虚拟显示操作的首版。未经过 Apple 公证；虚拟显示使用私有 macOS 接口；横竖屏按设备配置应用，未读取实时设备旋转。没有联网调用、UU账号令牌读取或第三方 Swift 包依赖。
+
+## 后续源码审查
+
+0.1.1 修复与清理见 [2026-10-13 审查报告](review-2026-10-13.md)。本页的真实设备结果继续对应 0.1.0，不作为 0.1.1 的实机验收证明。

@@ -1,0 +1,70 @@
+Building for debugging...
+[0/8] Write sources
+[4/8] Write swift-version-39B54973F684ADAB.txt
+[6/10] Emitting module PadDisplayCore
+[7/10] Compiling PadDisplayCore ConnectionPolicy.swift
+[8/16] Emitting module PadDisplayCoreTests
+[9/16] Compiling PadDisplayCoreTests ConnectionTests.swift
+[10/16] Compiling PadDisplay VirtualDisplayService.swift
+[11/16] Compiling PadDisplay AppController.swift
+[12/16] Emitting module PadDisplay
+[13/16] Compiling PadDisplay UUConnectionReader.swift
+[14/20] Compiling PadDisplay MenuContent.swift
+[15/20] Compiling PadDisplay Diagnostics.swift
+[16/20] Compiling PadDisplay ContentView.swift
+[17/20] Compiling PadDisplay PadDisplayApp.swift
+[17/22] Write Objects.LinkFileList
+[18/22] Linking PadDisplay
+[19/22] Applying PadDisplay
+[21/24] Emitting module PadDisplayTests
+[22/24] Compiling PadDisplayTests RecoveryTests.swift
+[22/24] Write Objects.LinkFileList
+[23/24] Linking PadDisplayPackageTests
+Build complete! (4.43s)
+Test Suite 'All tests' started at 2026-10-13 13:21:29.921.
+Test Suite 'PadDisplayPackageTests.xctest' started at 2026-10-13 13:21:29.922.
+Test Suite 'ConnectionTests' started at 2026-10-13 13:21:29.922.
+Test Case '-[PadDisplayCoreTests.ConnectionTests testConnectionCountHeadersAndDuplicateAXLabels]' started.
+Test Case '-[PadDisplayCoreTests.ConnectionTests testConnectionCountHeadersAndDuplicateAXLabels]' passed (0.003 seconds).
+Test Case '-[PadDisplayCoreTests.ConnectionTests testDisabledDeviceCanIgnoreInvalidHiddenSizeFields]' started.
+Test Case '-[PadDisplayCoreTests.ConnectionTests testDisabledDeviceCanIgnoreInvalidHiddenSizeFields]' passed (0.000 seconds).
+Test Case '-[PadDisplayCoreTests.ConnectionTests testEnabledDeviceRejectsNonNumericSizeInput]' started.
+Test Case '-[PadDisplayCoreTests.ConnectionTests testEnabledDeviceRejectsNonNumericSizeInput]' passed (0.000 seconds).
+Test Case '-[PadDisplayCoreTests.ConnectionTests testKnownMultipleConnectionsPauseWhenNamesAreUnavailable]' started.
+Test Case '-[PadDisplayCoreTests.ConnectionTests testKnownMultipleConnectionsPauseWhenNamesAreUnavailable]' passed (0.000 seconds).
+Test Case '-[PadDisplayCoreTests.ConnectionTests testObservedUURemote442Row]' started.
+Test Case '-[PadDisplayCoreTests.ConnectionTests testObservedUURemote442Row]' passed (0.001 seconds).
+Test Case '-[PadDisplayCoreTests.ConnectionTests testProfilesDoNotFallbackToAnotherDevice]' started.
+Test Case '-[PadDisplayCoreTests.ConnectionTests testProfilesDoNotFallbackToAnotherDevice]' passed (0.000 seconds).
+Test Case '-[PadDisplayCoreTests.ConnectionTests testSameNamedControllersAreStillMultipleConnections]' started.
+Test Case '-[PadDisplayCoreTests.ConnectionTests testSameNamedControllersAreStillMultipleConnections]' passed (0.000 seconds).
+Test Case '-[PadDisplayCoreTests.ConnectionTests testSeparateFieldsAndFalsePositives]' started.
+Test Case '-[PadDisplayCoreTests.ConnectionTests testSeparateFieldsAndFalsePositives]' passed (0.000 seconds).
+Test Case '-[PadDisplayCoreTests.ConnectionTests testSwitchDeviceAndDebouncedDisconnect]' started.
+Test Case '-[PadDisplayCoreTests.ConnectionTests testSwitchDeviceAndDebouncedDisconnect]' passed (0.000 seconds).
+Test Case '-[PadDisplayCoreTests.ConnectionTests testUnambiguousModelPresetsAndDimensions]' started.
+Test Case '-[PadDisplayCoreTests.ConnectionTests testUnambiguousModelPresetsAndDimensions]' passed (0.001 seconds).
+Test Case '-[PadDisplayCoreTests.ConnectionTests testUnavailableAndDuplicateDeviceNames]' started.
+Test Case '-[PadDisplayCoreTests.ConnectionTests testUnavailableAndDuplicateDeviceNames]' passed (0.000 seconds).
+Test Suite 'ConnectionTests' passed at 2026-10-13 13:21:29.928.
+	 Executed 11 tests, with 0 failures (0 unexpected) in 0.005 (0.006) seconds
+Test Suite 'RecoveryTests' started at 2026-10-13 13:21:29.928.
+Test Case '-[PadDisplayTests.RecoveryTests testDisplayReadFailurePreservesRecoveryRecord]' started.
+/Volumes/数据盘/项目文件/远程分辨率调整插件/Tests/PadDisplayTests/RecoveryTests.swift:17: error: -[PadDisplayTests.RecoveryTests testDisplayReadFailurePreservesRecoveryRecord] : XCTAssertTrue failed - 读取显示器失败不能视为全部已断开
+/Volumes/数据盘/项目文件/远程分辨率调整插件/Tests/PadDisplayTests/RecoveryTests.swift:22: error: -[PadDisplayTests.RecoveryTests testDisplayReadFailurePreservesRecoveryRecord] : XCTAssertEqual failed: threw error "Error Domain=NSCocoaErrorDomain Code=260 "未能打开文件“display-session.json”，因为它不存在。" UserInfo={NSFilePath=/var/folders/ck/9hlt0f9d7yncf9_z8mqd0pjc0000gn/T/PadDisplay-test-CFA61BE8-9345-4E28-8807-17720C53DF6D/display-session.json, NSURL=file:///var/folders/ck/9hlt0f9d7yncf9_z8mqd0pjc0000gn/T/PadDisplay-test-CFA61BE8-9345-4E28-8807-17720C53DF6D/display-session.json, NSUnderlyingError=0x76d14adb90 {Error Domain=NSPOSIXErrorDomain Code=2 "No such file or directory"}}"
+Test Case '-[PadDisplayTests.RecoveryTests testDisplayReadFailurePreservesRecoveryRecord]' failed (0.644 seconds).
+Test Case '-[PadDisplayTests.RecoveryTests testRewarning: '--build-system native' has been deprecated and will be removed in a future release; please report an issue at https://github.com/swiftlang/swift-package-manager/issues if you are unable to adopt the default build system.
+tryDoesNotClaimCorruptJournalWasRestored]' started.
+Test Case '-[PadDisplayTests.RecoveryTests testRetryDoesNotClaimCorruptJournalWasRestored]' passed (0.031 seconds).
+Test Suite 'RecoveryTests' failed at 2026-10-13 13:21:30.604.
+	 Executed 2 tests, with 2 failures (1 unexpected) in 0.676 (0.676) seconds
+Test Suite 'PadDisplayPackageTests.xctest' failed at 2026-10-13 13:21:30.604.
+	 Executed 13 tests, with 2 failures (1 unexpected) in 0.681 (0.682) seconds
+Test Suite 'All tests' failed at 2026-10-13 13:21:30.604.
+	 Executed 13 tests, with 2 failures (1 unexpected) in 0.681 (0.683) seconds
+◇ Test run started.
+↳ Testing Library Version: 2078
+↳ Target Platform: arm64e-apple-macos14.0
+✔ Test run with 0 tests in 0 suites passed after 0.001 seconds.
+Note: Some test targets reported failures:
+  - PadDisplayPackageTests (XCTest)

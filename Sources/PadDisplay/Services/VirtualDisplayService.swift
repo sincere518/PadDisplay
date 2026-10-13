@@ -29,7 +29,8 @@ final class VirtualDisplayService {
     static let supportDirectory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         .appendingPathComponent("PadDisplay", isDirectory: true)
     private let queue = DispatchQueue(label: "local.PadDisplay.displays")
-    private let journal = supportDirectory.appendingPathComponent("display-session.json")
+    private let journal: URL
+    private let readDisplays: () throws -> [CGDirectDisplayID]
     private var desired: DisplayRequest?
     private var current: DisplayRequest?
     private var busy = false
@@ -43,12 +44,30 @@ final class VirtualDisplayService {
     private var configurationStalled = false
     var onChange: ((DisplayReport) -> Void)?
 
+    init(supportDirectory: URL = VirtualDisplayService.supportDirectory,
+         readDisplays: @escaping () throws -> [CGDirectDisplayID] = VirtualDisplayService.readOnlineDisplays) {
+        journal = supportDirectory.appendingPathComponent("display-session.json")
+        self.readDisplays = readDisplays
+    }
+
     static func displays() -> [CGDirectDisplayID] {
+        (try? readOnlineDisplays()) ?? []
+    }
+
+    private static func readOnlineDisplays() throws -> [CGDirectDisplayID] {
         var count: UInt32 = 0
-        guard CGGetOnlineDisplayList(0, nil, &count) == .success else { return [] }
+        var error = CGGetOnlineDisplayList(0, nil, &count)
+        guard error == .success else { throw displayReadFailure(error) }
+        guard count > 0 else { return [] }
         var ids = [CGDirectDisplayID](repeating: 0, count: Int(count))
-        guard CGGetOnlineDisplayList(count, &ids, &count) == .success else { return [] }
+        error = CGGetOnlineDisplayList(count, &ids, &count)
+        guard error == .success else { throw displayReadFailure(error) }
         return Array(ids.prefix(Int(count)))
+    }
+
+    private static func displayReadFailure(_ error: CGError) -> NSError {
+        NSError(domain: "PadDisplay", code: Int(error.rawValue),
+                userInfo: [NSLocalizedDescriptionKey: "无法读取显示器列表：\(error.rawValue)"])
     }
 
     func request(_ value: DisplayRequest?, retry: Bool = false) {
@@ -97,7 +116,9 @@ final class VirtualDisplayService {
         queue.async {
             var result = DisplayReport()
             do {
-                if self.handle != nil || !self.positions.isEmpty { try self.remove() }
+                if self.handle != nil || !self.positions.isEmpty || FileManager.default.fileExists(atPath: self.journal.path) {
+                    try self.remove()
+                }
                 if let target {
                     try self.create(target)
                     result.active = target
@@ -125,12 +146,12 @@ final class VirtualDisplayService {
 
     private func create(_ request: DisplayRequest) throws {
         if let problem = request.spec.validationError { throw failure(problem) }
-        positions = Self.displays().map { id in
+        positions = try readDisplays().map { id in
             let origin = CGDisplayBounds(id).origin
             return SavedPosition(id: id, vendor: CGDisplayVendorNumber(id), model: CGDisplayModelNumber(id),
                                  serial: CGDisplaySerialNumber(id), x: Int32(origin.x), y: Int32(origin.y))
         }
-        try FileManager.default.createDirectory(at: Self.supportDirectory, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: journal.deletingLastPathComponent(), withIntermediateDirectories: true)
         try JSONEncoder().encode(positions).write(to: journal, options: .atomic)
         let spec = request.spec
         handle = PDDisplayCreate("PadDisplay · \(request.name)", UInt32(spec.width), UInt32(spec.height))
@@ -141,13 +162,14 @@ final class VirtualDisplayService {
         }
         let id = PDDisplayID(handle)
         Thread.sleep(forTimeInterval: 3)
-        guard Self.displays().contains(id), let mode = CGDisplayCopyDisplayMode(id),
+        guard try readDisplays().contains(id), let mode = CGDisplayCopyDisplayMode(id),
               mode.pixelWidth == spec.width, mode.pixelHeight == spec.height else {
             throw failure("虚拟屏幕未以目标分辨率上线。")
         }
         let origin = CGDisplayBounds(id).origin
+        let online = try readDisplays()
         try configure { config in
-            for display in Self.displays() {
+            for display in online {
                 let p = CGDisplayBounds(display).origin
                 let error = CGConfigureDisplayOrigin(config, display, Int32(p.x - origin.x), Int32(p.y - origin.y))
                 if error != .success { return error }
@@ -160,19 +182,22 @@ final class VirtualDisplayService {
 
     private func remove() throws {
         if configurationStalled { throw failure("系统显示配置无响应，请注销或重启 Mac 后恢复。") }
+        if positions.isEmpty, FileManager.default.fileExists(atPath: journal.path) {
+            positions = try JSONDecoder().decode([SavedPosition].self, from: Data(contentsOf: journal))
+        }
         if let handle {
             Thread.sleep(forTimeInterval: max(0, 3 - Date().timeIntervalSince(born)))
             let id = PDDisplayID(handle)
             PDDisplayRelease(handle)
             self.handle = nil
             Thread.sleep(forTimeInterval: 1.5)
-            guard !Self.displays().contains(id) else { throw failure("虚拟屏幕尚未移除，请稍后重试恢复。") }
+            guard try !readDisplays().contains(id) else { throw failure("虚拟屏幕尚未移除，请稍后重试恢复。") }
         }
         try restorePositions()
     }
 
     private func restorePositions() throws {
-        let available = Set(Self.displays())
+        let available = positions.isEmpty ? [] : Set(try readDisplays())
         let targets = positions.filter { p in
             available.contains(p.id) && CGDisplayVendorNumber(p.id) == p.vendor &&
             CGDisplayModelNumber(p.id) == p.model && CGDisplaySerialNumber(p.id) == p.serial
@@ -194,7 +219,10 @@ final class VirtualDisplayService {
     private func configure(_ body: (CGDisplayConfigRef?) -> CGError) throws {
         var config: CGDisplayConfigRef?
         var error = CGBeginDisplayConfiguration(&config)
-        guard error == .success else { throw failure("无法开始显示配置：\(error.rawValue)") }
+        guard error == .success else {
+            configurationStalled = error == .cannotComplete || error.rawValue == 1014
+            throw failure("无法开始显示配置：\(error.rawValue)")
+        }
         error = body(config)
         if error == .success { error = CGCompleteDisplayConfiguration(config, .forSession) }
         if error != .success {

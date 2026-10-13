@@ -62,7 +62,7 @@ final class AppController {
         permissionGranted = UUConnectionReader.authorized
         reader.sample { [weak self] reading in
             guard let self, self.started else { return }
-            self.controllers = self.tracker.update(reading.controllers, now: Date())
+            self.controllers = self.tracker.update(reading.controllers, reportedCount: reading.controllerCount, now: Date())
             self.connectionStatus = reading.detail
             for name in self.controllers where !self.discovered.contains(name) {
                 self.discovered.insert(name)
@@ -71,7 +71,10 @@ final class AppController {
                     self.persist()
                 }
             }
-            if self.controllers.isEmpty { self.suspended = false; self.discovered = [] }
+            if self.tracker.controllerCount == 0, reading.controllers?.isEmpty == true {
+                self.suspended = false
+                self.discovered = []
+            }
             self.updateDisplay()
         }
     }
@@ -87,14 +90,13 @@ final class AppController {
         if let index = profiles.firstIndex(where: { $0.id == profile.id }) { profiles[index] = profile }
         else { profiles.append(profile) }
         persist()
-        notice = "已保存，之后此设备连入时自动应用。"
+        notice = profile.enabled ? "已保存，之后此设备连入时自动应用。" : "已保存，此设备连入时不调整桌面。"
         updateDisplay()
     }
 
     func addDevice() -> UUID {
         let name = controllers.first(where: { n in !profiles.contains { $0.name == n } }) ?? ""
-        let preset = ScreenPreset.suggested(for: name)
-        let profile = DeviceProfile(name: name, enabled: !name.isEmpty, spec: preset?.spec ?? ScreenPreset.all[0].spec)
+        let profile = DeviceProfile.draft(for: name)
         profiles.append(profile)
         return profile.id
     }
@@ -129,7 +131,7 @@ final class AppController {
         }
         if let manual { display.request(manual); return }
         guard automatic, !suspended else { display.request(nil); return }
-        switch DeviceDecision.resolve(names: controllers, profiles: profiles) {
+        switch DeviceDecision.resolve(names: controllers, controllerCount: tracker.controllerCount, profiles: profiles) {
         case .use(let profile):
             if let error = profile.spec.validationError { notice = error; display.request(nil) }
             else { display.request(.init(name: profile.name, spec: profile.spec)) }

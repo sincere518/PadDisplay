@@ -11,5 +11,6 @@ let package = Package(
                 linkerSettings: [.linkedFramework("CoreGraphics")]),
         .executableTarget(name: "PadDisplay", dependencies: ["PadDisplayCore", "DisplayBridge"]),
         .testTarget(name: "PadDisplayCoreTests", dependencies: ["PadDisplayCore"]),
+        .testTarget(name: "PadDisplayTests", dependencies: ["PadDisplay"]),
     ]
 )

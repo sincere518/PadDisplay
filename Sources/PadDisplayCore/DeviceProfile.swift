@@ -35,6 +35,20 @@ public struct DeviceProfile: Codable, Identifiable, Equatable {
         self.enabled = enabled
         self.spec = spec
     }
+
+    public func applyingSizeInput(width: String, height: String) -> DeviceProfile? {
+        guard enabled else { return self }
+        guard let w = Int(width), let h = Int(height) else { return nil }
+        var value = self
+        value.spec.width = w
+        value.spec.height = h
+        return value
+    }
+
+    public static func draft(for name: String) -> DeviceProfile {
+        let preset = ScreenPreset.suggested(for: name)
+        return DeviceProfile(name: name, enabled: false, spec: preset?.spec ?? ScreenPreset.all[0].spec)
+    }
 }
 
 public struct ScreenPreset: Identifiable {

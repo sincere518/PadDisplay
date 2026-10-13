@@ -17,11 +17,8 @@ struct ProfileEditor: View {
     }
 
     private var candidate: DeviceProfile? {
-        guard let w = Int(width), let h = Int(height) else { return nil }
-        var value = profile
+        guard var value = profile.applyingSizeInput(width: width, height: height) else { return nil }
         value.name = value.name.trimmingCharacters(in: .whitespacesAndNewlines)
-        value.spec.width = w
-        value.spec.height = h
         return value
     }
 

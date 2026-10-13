@@ -1,0 +1,4 @@
+PASS: foreign --verify => status=1 stopped=no built=no
+PASS: foreign --package => status=88 stopped=no built=yes
+PASS: staged --verify => status=88 stopped=yes built=yes
+PASS: staged --package => status=1 stopped=no built=no

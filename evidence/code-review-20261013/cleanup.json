@@ -1,0 +1,38 @@
+{
+  "removed": [
+    {
+      "path": "reference",
+      "files": 93,
+      "bytes": 9922927,
+      "disk_bytes": 10145792
+    },
+    {
+      "path": "evidence/upstream",
+      "files": 2,
+      "bytes": 9494122,
+      "disk_bytes": 9494528
+    },
+    {
+      "path": "build",
+      "files": 3218,
+      "bytes": 514862313,
+      "disk_bytes": 522375168
+    }
+  ],
+  "preserved": [
+    "evidence/release-0.1.0",
+    "evidence/phone-e2e-20261013-01",
+    "evidence/display-self-test.json",
+    "evidence/live-ipad-displays.json"
+  ],
+  "total_files_removed": 3313,
+  "total_bytes_removed": 534279362,
+  "total_disk_bytes_removed": 542015488,
+  "final_verification_cache_removed": {
+    "path": "build",
+    "reason": "regenerated during final connection-count regression and packaging",
+    "files": 2964,
+    "bytes": 383027916,
+    "disk_bytes": 389984256
+  }
+}

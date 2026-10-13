@@ -1,0 +1,12 @@
+Building for production...
+[0/6] Write sources
+[2/6] Write swift-version-39B54973F684ADAB.txt
+[3/7] Compiling DisplayBridge DisplayBridge.m
+[5/7] Compiling PadDisplayCore ConnectionPolicy.swift
+[6/8] Compiling PadDisplay PadDisplayApp.swift
+[6/8] Write Objects.LinkFileList
+[7/8] Linking PadDisplay
+Build of product 'PadDisplay' complete! (9.74s)
+warning: '--build-system native' has been deprecated and will be removed in a future release; please report an issue at https://github.com/swiftlang/swift-package-manager/issues if you are unable to adopt the default build system.
+warning: '--build-system native' has been deprecated and will be removed in a future release; please report an issue at https://github.com/swiftlang/swift-package-manager/issues if you are unable to adopt the default build system.
+/Volumes/数据盘/项目文件/远程分辨率调整插件/dist/PadDisplay.app: replacing existing signature

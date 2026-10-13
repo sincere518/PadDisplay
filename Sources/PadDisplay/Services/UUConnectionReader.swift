@@ -5,6 +5,7 @@ import PadDisplayCore
 struct ConnectionReading {
     var controllers: [String]?
     var detail: String
+    var controllerCount: Int? = nil
 }
 
 /// 只读取 UU 自己的被控设备表格，不依赖远控覆盖窗口是否出现。
@@ -87,9 +88,11 @@ final class UUConnectionReader {
             }
         }
         guard Date() < deadline else { return .init(controllers: nil, detail: "UU远程界面暂时无响应") }
-        if !names.isEmpty { return .init(controllers: names, detail: "已识别连接设备") }
-        if titles.contains(where: { $0.contains("本机被控中") && !$0.contains("当前有 0 台") }) {
-            return .init(controllers: nil, detail: "UU 正在被控，但尚未读到设备名称")
+        let count = UUControllerParser.controllerCount(in: titles)
+        if count == 0 { return .init(controllers: [], detail: "等待远程设备连接", controllerCount: 0) }
+        if !names.isEmpty { return .init(controllers: names, detail: "已识别连接设备", controllerCount: count) }
+        if (count ?? 0) > 0 || titles.contains(where: { $0.contains("本机被控中") && !$0.contains("当前有 0 台") }) {
+            return .init(controllers: nil, detail: "UU 正在被控，但尚未读到设备名称", controllerCount: count)
         }
         return .init(controllers: [], detail: "等待远程设备连接")
     }

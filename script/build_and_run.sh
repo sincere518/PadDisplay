@@ -1,23 +1,52 @@
 #!/bin/bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 cd "$ROOT_DIR"
 MODE="${1:-run}"
 CONFIGURATION="${CONFIGURATION:-debug}"
 APP_BUNDLE="$ROOT_DIR/dist/PadDisplay.app"
 APP_BINARY="$APP_BUNDLE/Contents/MacOS/PadDisplay"
+VERSION=0.1.1
 if [[ -z "${DEVELOPER_DIR:-}" && -d /Applications/Xcode-beta.app/Contents/Developer ]]; then
   export DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer
 fi
 export CLANG_MODULE_CACHE_PATH="$ROOT_DIR/build/clang-cache"
 mkdir -p build
 
+LAUNCH=false
 case "$MODE" in
-  run|--debug|--logs|--telemetry|--verify) pkill -x PadDisplay >/dev/null 2>&1 || true ;;
+  run|--debug|--logs|--telemetry|--verify) LAUNCH=true ;;
   --build|--package) ;;
   *) echo "Usage: $0 [run|--build|--package|--debug|--logs|--telemetry|--verify]" >&2; exit 2 ;;
 esac
+STAGED_PIDS=()
+for pid in $(pgrep -x PadDisplay || true); do
+  process_path="$(ps -p "$pid" -o comm= 2>/dev/null || true)"
+  if [[ "$process_path" == "$APP_BINARY" ]]; then
+    if [[ "$LAUNCH" == false ]]; then
+      echo "请先退出项目目录中的 PadDisplay，再重新构建或打包。" >&2
+      exit 1
+    fi
+    STAGED_PIDS+=("$pid")
+  elif [[ "$LAUNCH" == true ]]; then
+    echo "其他位置的 PadDisplay 正在运行，请先在该应用中退出；脚本不会结束它。" >&2
+    exit 1
+  fi
+done
+if [[ "${#STAGED_PIDS[@]}" -gt 0 ]]; then
+  for pid in "${STAGED_PIDS[@]}"; do
+    kill -TERM "$pid"
+    for attempt in {1..15}; do
+      [[ "$(ps -p "$pid" -o comm= 2>/dev/null || true)" == "$APP_BINARY" ]] || break
+      sleep 1
+    done
+    if [[ "$(ps -p "$pid" -o comm= 2>/dev/null || true)" == "$APP_BINARY" ]]; then
+      echo "项目应用尚未完成退出，请稍后重试。" >&2
+      exit 1
+    fi
+  done
+fi
 if [[ "$MODE" == "--package" ]]; then CONFIGURATION=release; fi
 xcrun swift build --build-system native --disable-sandbox --scratch-path build/swift-native \
   --cache-path build/swift-cache -c "$CONFIGURATION" --product PadDisplay
@@ -28,7 +57,7 @@ mkdir -p "$APP_BUNDLE/Contents/MacOS" "$APP_BUNDLE/Contents/Resources"
 cp "$BIN_DIR/PadDisplay" "$APP_BINARY"
 cp LICENSE "$APP_BUNDLE/Contents/Resources/LICENSE.txt"
 xcrun swift -module-cache-path build/icon-cache script/make_icon.swift "$APP_BUNDLE/Contents/Resources/AppIcon.icns"
-cat > "$APP_BUNDLE/Contents/Info.plist" <<'PLIST'
+cat > "$APP_BUNDLE/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
@@ -37,8 +66,8 @@ cat > "$APP_BUNDLE/Contents/Info.plist" <<'PLIST'
 <key>CFBundleDisplayName</key><string>PadDisplay</string>
 <key>CFBundleExecutable</key><string>PadDisplay</string>
 <key>CFBundlePackageType</key><string>APPL</string>
-<key>CFBundleShortVersionString</key><string>0.1.0</string>
-<key>CFBundleVersion</key><string>1</string>
+<key>CFBundleShortVersionString</key><string>$VERSION</string>
+<key>CFBundleVersion</key><string>2</string>
 <key>CFBundleIconFile</key><string>AppIcon</string>
 <key>LSMinimumSystemVersion</key><string>14.0</string>
 <key>NSHighResolutionCapable</key><true/>
@@ -51,8 +80,8 @@ codesign --verify --strict --deep "$APP_BUNDLE"
 case "$MODE" in
   --build) ;;
   --package)
-    ditto -c -k --keepParent "$APP_BUNDLE" "$ROOT_DIR/dist/PadDisplay-0.1.0-arm64.zip"
-    shasum -a 256 "$ROOT_DIR/dist/PadDisplay-0.1.0-arm64.zip" > "$ROOT_DIR/dist/SHA256SUMS.txt"
+    ditto -c -k --keepParent "$APP_BUNDLE" "$ROOT_DIR/dist/PadDisplay-$VERSION-arm64.zip"
+    (cd "$ROOT_DIR/dist" && shasum -a 256 PadDisplay-*-arm64.zip) > "$ROOT_DIR/dist/SHA256SUMS.txt"
     ;;
   --debug) lldb -- "$APP_BINARY" ;;
   --logs|--telemetry)
@@ -62,7 +91,11 @@ case "$MODE" in
   --verify)
     /usr/bin/open -n "$APP_BUNDLE"
     sleep 2
-    pgrep -x PadDisplay >/dev/null
+    verified=false
+    for pid in $(pgrep -x PadDisplay || true); do
+      [[ "$(ps -p "$pid" -o comm= 2>/dev/null || true)" != "$APP_BINARY" ]] || verified=true
+    done
+    [[ "$verified" == true ]]
     ;;
   run) /usr/bin/open -n "$APP_BUNDLE" ;;
 esac
