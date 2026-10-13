@@ -1,0 +1,16 @@
+Building for debugging...
+[0/4] Write sources
+[1/4] Write swift-version-39B54973F684ADAB.txt
+[3/8] Compiling PadDisplay ProfileEditor.swift
+[4/8] Emitting module PadDisplay
+[5/8] Compiling PadDisplay AboutView.swift
+[6/8] Compiling PadDisplay DeviceDetailView.swift
+[7/9] Compiling PadDisplay ContentView.swift
+[7/10] Write Objects.LinkFileList
+[8/10] Linking PadDisplay
+[9/10] Applying PadDisplay
+Build of product 'PadDisplay' complete! (3.06s)
+warning: '--build-system native' has been deprecated and will be removed in a future release; please report an issue at https://github.com/swiftlang/swift-package-manager/issues if you are unable to adopt the default build system.
+warning: '--build-system native' has been deprecated and will be removed in a future release; please report an issue at https://github.com/swiftlang/swift-package-manager/issues if you are unable to adopt the default build system.
+/Volumes/数据盘/项目文件/远程分辨率调整插件/dist/PadDisplay.app: replacing existing signature
+/Volumes/数据盘/项目文件/远程分辨率调整插件/build/UIValidation/PadDisplay UI验证.app: replacing existing signature

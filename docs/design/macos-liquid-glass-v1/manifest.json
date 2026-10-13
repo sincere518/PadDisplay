@@ -1,0 +1,39 @@
+{
+  "type": "generated static UI concepts, not runtime screenshots",
+  "generator": "image_gen.imagegen",
+  "assets": [
+    {
+      "file": "01-main-light.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 1393690,
+      "sha256": "7d2a0eda0a6e2397b09147dd19678f3111357456eb17dfbc44c9db74155e3946"
+    },
+    {
+      "file": "02-main-dark.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 1475537,
+      "sha256": "d52de3724ba06f9e60d37a295e9c61fd117b7f03079b52db8c3d49625e6bf4a9"
+    },
+    {
+      "file": "03-editor-about-menu.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 1525243,
+      "sha256": "74800dbc350e54fc8464d07db290fbba990982c0ccdbdc60f9325a56235be47d"
+    },
+    {
+      "file": "04-settings-and-states.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 1517846,
+      "sha256": "9c62dd8c3c12a7db2f35026040005b37c93a9286f198c80a0f3b48c5def5153b"
+    }
+  ],
+  "author": "耳过清风",
+  "xiaohongshu": "5397290838",
+  "document_links_valid": true,
+  "image_text_visually_checked": true,
+  "application_implementation": "not started"
+}

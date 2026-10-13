@@ -1,0 +1,49 @@
+Window: "PadDisplay", App: PadDisplay UI验证.
+0 standard window PadDisplay, ID: main-AppWindow-1, Secondary Actions: Raise
+	1 split group main-AppWindow-1, SidebarNavigationSplitView
+		2 container
+			3 scroll area
+				4 list Sidebar
+					5 row (selectable) 设备
+					6 row (selected) Description: Ipad, Value: iPad Air 13 英寸
+已连接
+					7 row (selectable) Description: Iphone, Value: iPhone 17 Pro Max
+未连接
+			8 button 添加设备
+			9 button 设置
+			10 button 关于 PadDisplay
+		11 splitter (disabled, settable, float) 228
+		12 scroll area
+			13 text iPad Air 13 英寸 屏幕已就绪 已自动应用此设备的屏幕配置。
+			14 unknown Description: 输出像素, Details: 2732 × 2048
+			15 unknown Description: 桌面尺寸, Details: 1366 × 1024
+			16 text HiDPI 已开启 当前主显示器
+			17 image Description: Mac, ID: display
+			18 text 在 UU远程中选择「PadDisplay」屏幕 屏幕已匹配；连接端可能需要切换一次显示器。 保存的配置
+			19 button 编辑配置…
+			20 text 屏幕型号 iPad Air 13 英寸 屏幕方向 横屏 连接时自动调整
+			21 toggle button Description: 连接时自动调整, Value: on
+			22 text 断开自动匹配的连接后，恢复原桌面。 配置已保存
+			23 button Description: 立即应用, Help: 手动应用此配置，直到恢复、继续自动匹配或退出。
+	24 toolbar
+		25 button Description: Hide Sidebar, Secondary Actions: Increment, Decrement, Delete, Cancel
+		26 container Secondary Actions: Move previous, Move next, Remove from toolbar
+			27 text 自动匹配
+			28 toggle button Description: 自动匹配设备, Help: 按当前单个连接设备的配置自动调整屏幕。, Value: on
+		29 button Description: 恢复原桌面, Secondary Actions: Increment, Decrement, Delete, Cancel, Move previous, Remove from toolbar
+	30 close button
+	31 full screen button Help: this button also has an action to zoom the window, Secondary Actions: zoom the window
+	32 minimize button
+	33 text PadDisplay
+34 menu bar
+	35 PadDisplay UI验证
+	36 File
+	37 Edit
+	38 View
+	39 Window
+	40 Help
+
+Selected:
+	6 row (selected)
+
+Note: Pay special attention to the content selected by the user. If the user asks a question or refers to the content they are looking at on-screen, they might be referring to the selected content (but they might be referring to something else that's visible, too).

@@ -47,7 +47,7 @@ public struct DeviceProfile: Codable, Identifiable, Equatable {
 
     public static func draft(for name: String) -> DeviceProfile {
         let preset = ScreenPreset.suggested(for: name)
-        return DeviceProfile(name: name, enabled: false, spec: preset?.spec ?? ScreenPreset.all[0].spec)
+        return DeviceProfile(name: name, enabled: false, spec: preset?.spec ?? DisplaySpec(width: 0, height: 0))
     }
 }
 

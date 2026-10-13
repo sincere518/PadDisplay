@@ -1,0 +1,10 @@
+{
+  "installed_binary_sha256": true,
+  "automatic": true,
+  "profiles": true,
+  "active_layout_record": false,
+  "processes": true,
+  "displays_unchanged": false,
+  "physical_display_pixels_and_size_unchanged": true,
+  "display_change_context": "Installed 0.1.0 has a real iPad session, confirmed by read-only AX; UI validation processes are closed."
+}

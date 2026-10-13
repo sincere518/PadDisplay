@@ -13,6 +13,7 @@ struct DisplayReport {
     var busy = false
     var message = "尚未创建远程屏幕"
     var failed = false
+    var recoveryNeeded = false
 }
 
 private struct SavedPosition: Codable {
@@ -96,7 +97,8 @@ final class VirtualDisplayService {
                 self.busy = false
                 self.blocked = error != nil
                 self.needsRecovery = error != nil
-                self.onChange?(.init(message: error?.localizedDescription ?? "准备就绪", failed: error != nil))
+                self.onChange?(.init(message: error?.localizedDescription ?? "准备就绪", failed: error != nil,
+                                    recoveryNeeded: error != nil))
                 self.reconcile()
             }
         }
@@ -132,6 +134,7 @@ final class VirtualDisplayService {
                 result.failed = true
             }
             let pendingRecovery = self.handle != nil || !self.positions.isEmpty || FileManager.default.fileExists(atPath: self.journal.path)
+            result.recoveryNeeded = result.failed && pendingRecovery
             DispatchQueue.main.async {
                 self.busy = false
                 self.current = result.active

@@ -15,6 +15,7 @@ final class RecoveryTests: XCTestCase {
         let finished = expectation(description: "Recovery reports display enumeration failure")
         service.onChange = { report in
             XCTAssertTrue(report.failed, "读取显示器失败不能视为全部已断开")
+            XCTAssertTrue(report.recoveryNeeded)
             finished.fulfill()
         }
         service.recover()
@@ -32,7 +33,7 @@ final class RecoveryTests: XCTestCase {
         let service = VirtualDisplayService(supportDirectory: directory)
         let initialFailure = expectation(description: "Initial recovery reports corruption")
         service.onChange = { report in
-            if report.failed { initialFailure.fulfill() }
+            if report.failed { XCTAssertTrue(report.recoveryNeeded); initialFailure.fulfill() }
         }
         service.recover()
         wait(for: [initialFailure], timeout: 3)
@@ -55,6 +56,7 @@ final class RecoveryTests: XCTestCase {
         service.onChange = { report in
             if !report.busy {
                 XCTAssertFalse(report.failed)
+                XCTAssertFalse(report.recoveryNeeded)
                 repaired.fulfill()
             }
         }

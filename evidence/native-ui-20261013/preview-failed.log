@@ -1,0 +1,7 @@
+Building for debugging...
+[0/3] Write swift-version-39B54973F684ADAB.txt
+Build of product 'PadDisplay' complete! (0.26s)
+warning: '--build-system native' has been deprecated and will be removed in a future release; please report an issue at https://github.com/swiftlang/swift-package-manager/issues if you are unable to adopt the default build system.
+warning: '--build-system native' has been deprecated and will be removed in a future release; please report an issue at https://github.com/swiftlang/swift-package-manager/issues if you are unable to adopt the default build system.
+/Volumes/数据盘/项目文件/远程分辨率调整插件/dist/PadDisplay.app: replacing existing signature
+/Volumes/数据盘/项目文件/远程分辨率调整插件/build/UIValidation/PadDisplay UI验证.app: replacing existing signature

@@ -1,0 +1,28 @@
+Building for debugging...
+[0/8] Write PadDisplay-entitlement.plist
+[0/8] Write sources
+[3/8] Write swift-version-39B54973F684ADAB.txt
+[4/11] Compiling DisplayBridge DisplayBridge.m
+[6/11] Compiling PadDisplayCore ConnectionPolicy.swift
+[7/11] Compiling PadDisplayCore DeviceProfile.swift
+[8/11] Emitting module PadDisplayCore
+[9/25] Compiling PadDisplay SessionStatusView.swift
+[10/25] Compiling PadDisplay AboutView.swift
+[11/25] Compiling PadDisplay ContentView.swift
+[12/25] Compiling PadDisplay ProfileEditor.swift
+[13/26] Compiling PadDisplay SettingsView.swift
+[14/26] Compiling PadDisplay Diagnostics.swift
+[15/26] Compiling PadDisplay UUConnectionReader.swift
+[16/26] Compiling PadDisplay MenuContent.swift
+[17/26] Emitting module PadDisplay
+[18/26] Compiling PadDisplay VirtualDisplayService.swift
+[19/26] Compiling PadDisplay AppController.swift
+[20/26] Compiling PadDisplay DeviceDetailView.swift
+[21/26] Compiling PadDisplay PadDisplayApp.swift
+[22/26] Compiling PadDisplay SessionState.swift
+[23/26] Compiling PadDisplay UIStyle.swift
+[23/26] Write Objects.LinkFileList
+[24/26] Linking PadDisplay
+[25/26] Applying PadDisplay
+Build of product 'PadDisplay' complete! (10.39s)
+warning: '--build-system native' has been deprecated and will be removed in a future release; please report an issue at https://github.com/swiftlang/swift-package-manager/issues if you are unable to adopt the default build system.

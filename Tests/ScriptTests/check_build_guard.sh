@@ -43,3 +43,4 @@ check foreign --verify 1 no no
 check foreign --package 88 no yes
 check staged --verify 88 yes yes
 check staged --package 1 no no
+check foreign --preview 88 no yes

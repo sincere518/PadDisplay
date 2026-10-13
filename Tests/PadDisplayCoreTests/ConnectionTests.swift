@@ -118,6 +118,7 @@ final class ConnectionTests: XCTestCase {
         let name = "我的手机"
         let draft = DeviceProfile.draft(for: name)
         XCTAssertFalse(draft.enabled)
+        XCTAssertNotNil(draft.spec.validationError, "未知设备需要确认尺寸，不能沿用 iPad 默认值")
         XCTAssertEqual(DeviceDecision.resolve(names: [name], controllerCount: 1, profiles: [draft]), .idle)
         var saved = draft
         saved.enabled = true

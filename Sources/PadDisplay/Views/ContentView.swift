@@ -3,84 +3,111 @@ import SwiftUI
 
 struct ContentView: View {
     @Bindable var model: AppController
+    @Environment(\.openWindow) private var openWindow
     @State private var selection: UUID?
+    @State private var editing: DeviceProfile?
 
     var body: some View {
         NavigationSplitView {
             List(selection: $selection) {
                 Section("设备") {
                     ForEach(model.profiles) { profile in
-                        Label {
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text(profile.name.isEmpty ? "新设备" : profile.name).lineLimit(1)
-                                Text(profile.enabled ? profile.spec.label : "不调整").font(.caption).foregroundStyle(.secondary)
+                        HStack(spacing: 12) {
+                            Image(systemName: profile.symbol).font(.system(size: 22, weight: .regular)).frame(width: 26)
+                            VStack(alignment: .leading, spacing: 5) {
+                                Text(profile.displayTitle).font(.callout.weight(.medium)).lineLimit(1)
+                                HStack(spacing: 5) {
+                                    if model.controllers.contains(profile.name) {
+                                        Circle().fill(.green).frame(width: 6, height: 6)
+                                    }
+                                    Text(model.controllers.contains(profile.name) ? "已连接" : "未连接")
+                                        .font(.caption).foregroundStyle(.secondary)
+                                }
                             }
-                        } icon: {
-                            Image(systemName: profile.enabled ? "ipad.landscape" : "desktopcomputer")
-                        }.tag(profile.id)
+                        }.padding(.vertical, 8).tag(profile.id).help(profile.name)
+                        .contextMenu { Button("编辑配置…") { editing = profile } }
                     }
                 }
-            }
-            .navigationSplitViewColumnWidth(min: 200, ideal: 235, max: 300)
+            }.listStyle(.sidebar)
+            .navigationSplitViewColumnWidth(min: 208, ideal: 228, max: 290)
             .safeAreaInset(edge: .bottom) {
-                Button { selection = model.addDevice() } label: {
-                    Label("添加设备", systemImage: "plus")
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }.buttonStyle(.borderless).padding()
+                VStack(alignment: .leading, spacing: 12) {
+                    Button { editing = model.makeDraft() } label: {
+                        Label("添加设备", systemImage: "plus.circle").frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    Divider()
+                    SettingsLink { Label("设置", systemImage: "gearshape").frame(maxWidth: .infinity, alignment: .leading) }
+                    Button { openWindow(id: "about") } label: {
+                        Label("关于 PadDisplay", systemImage: "info.circle").frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }.buttonStyle(.borderless).font(.callout).padding(16)
             }
         } detail: {
-            VStack(spacing: 0) {
-                status.padding(20)
-                Divider()
-                if let profile = model.profiles.first(where: { $0.id == selection }) {
-                    ProfileEditor(model: model, profile: profile).id(profile.id)
-                } else {
-                    ContentUnavailableView("为每台设备准备合适的桌面", systemImage: "display.2",
-                                           description: Text("添加设备并保存屏幕尺寸，之后连入时自动应用。"))
-                }
+            ScrollView {
+                VStack(alignment: .leading, spacing: 22) {
+                    if model.sessionState != .ready && model.sessionState != .manual {
+                        SessionStatusView(model: model) { editing = model.makeDraft() }
+                    }
+                    if let notice = model.notice {
+                        HStack(alignment: .top) {
+                            Label(notice, systemImage: "exclamationmark.circle").foregroundStyle(.orange)
+                            Spacer()
+                            Button("关闭提示", systemImage: "xmark") { model.notice = nil }.labelStyle(.iconOnly).buttonStyle(.borderless)
+                        }.font(.callout).padding(12).groupedSurface()
+                    }
+                    if let profile = model.profiles.first(where: { $0.id == selection }) {
+                        DeviceDetailView(model: model, profile: profile) { editing = $0 }
+                    } else {
+                        ContentUnavailableView {
+                            Label("为每台设备准备合适的桌面", systemImage: "display.2")
+                        } description: {
+                            Text("添加设备并保存屏幕尺寸，之后连入时自动应用。")
+                        } actions: {
+                            Button("添加设备") { editing = model.makeDraft() }.appButton(prominent: true)
+                        }
+                    }
+                }.padding(28).frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .navigationTitle("PadDisplay · 远程桌面助手")
-        .frame(minWidth: 780, minHeight: 640)
-        .onAppear { if selection == nil { selection = model.profiles.first?.id } }
+        .navigationTitle("PadDisplay")
+        .frame(minWidth: 900, minHeight: 620)
         .toolbar {
-            Button("恢复原桌面", systemImage: "arrow.uturn.backward") { model.restore() }
-                .disabled(model.report.busy)
+            ToolbarItem(placement: .primaryAction) {
+                HStack(spacing: 8) {
+                    Text("自动匹配").font(.callout)
+                    Toggle("自动匹配设备", isOn: $model.automatic).labelsHidden()
+                        .accessibilityLabel("自动匹配设备").toggleStyle(.switch).controlSize(.small)
+                        .help("按当前单个连接设备的配置自动调整屏幕。")
+                }
+            }
+            if #available(macOS 26, *) { ToolbarSpacer(.fixed, placement: .primaryAction) }
+            ToolbarItem(placement: .primaryAction) {
+                Button("恢复原桌面", systemImage: "arrow.uturn.backward") { model.restore() }
+                    .labelStyle(.titleAndIcon)
+                    .disabled(model.report.busy)
+            }
         }
-        .alert("PadDisplay", isPresented: Binding(get: { model.notice != nil }, set: { if !$0 { model.notice = nil } })) {
-            Button("好") { model.notice = nil }
-        } message: { Text(model.notice ?? "") }
+        .onAppear { selectActiveOrFirst() }
+        .onChange(of: model.report.active) { _, request in
+            if editing == nil, let request, let profile = model.profiles.first(where: { $0.name == request.name }) {
+                selection = profile.id
+            }
+        }
+        .onChange(of: model.profiles) { _, profiles in
+            if !profiles.contains(where: { $0.id == selection }) { selectActiveOrFirst() }
+        }
+        .sheet(item: $editing) { profile in
+            ProfileEditor(model: model, profile: profile) { saved in
+                guard model.save(saved) else { return false }
+                selection = saved.id
+                return true
+            }
+        }
     }
 
-    private var status: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .top, spacing: 12) {
-                Image(systemName: model.report.active == nil ? "display.2" : "checkmark.circle.fill")
-                    .font(.system(size: 30)).foregroundStyle(model.report.failed ? Color.red : Color.accentColor)
-                VStack(alignment: .leading, spacing: 5) {
-                    Text(model.report.message).font(.headline)
-                    Text(model.connectionStatus).font(.subheadline).foregroundStyle(.secondary)
-                        .textSelection(.enabled)
-                    if !model.controllers.isEmpty {
-                        Text(model.controllers.joined(separator: "、")).font(.caption).foregroundStyle(.secondary)
-                    }
-                }
-                Spacer()
-                if model.report.busy { ProgressView().controlSize(.small) }
-            }
-            HStack {
-                Toggle("自动匹配设备", isOn: $model.automatic).toggleStyle(.switch)
-                Spacer()
-                Button("打开 UU远程") { model.openUU() }
-            }
-            if !model.permissionGranted {
-                HStack {
-                    Text("首次使用需要允许 PadDisplay 读取 UU远程的连接设备名称。")
-                        .font(.caption).foregroundStyle(.secondary)
-                    Spacer()
-                    Button("授权识别连接") { model.openPermissions() }
-                }
-            }
+    private func selectActiveOrFirst() {
+        if selection == nil || !model.profiles.contains(where: { $0.id == selection }) {
+            selection = model.profiles.first(where: { $0.name == model.report.active?.name })?.id ?? model.profiles.first?.id
         }
     }
 }

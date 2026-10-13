@@ -1,0 +1,19 @@
+{
+  "version": "0.2.0",
+  "build": "3",
+  "bundle_id": "local.PadDisplay",
+  "minimum_macos": "14.0",
+  "zip_sha256": "95de1d14b7dbcd01e3be15a1f8aad0c62ce56de507aec2673836dd904f81157c",
+  "zip_matches_staged_bundle": {
+    "Contents/MacOS/PadDisplay": true,
+    "Contents/Info.plist": true,
+    "Contents/Resources/AppIcon.icns": true,
+    "Contents/Resources/LICENSE.txt": true,
+    "Contents/Resources/iphone-frame.png": true,
+    "Contents/Resources/ASSET-NOTICE.txt": true
+  },
+  "source_frame_sha256": "3f63605264965d94d76dae05557e8caae51ca10123ac3cbf3a83a667bd23259c",
+  "runtime_host": "macOS 27.0.1 (26A434)",
+  "xctest_count": 19,
+  "script_scenarios": 5
+}
