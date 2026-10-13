@@ -1,0 +1,106 @@
+{
+  "after" : [
+    {
+      "id" : 1,
+      "logicalHeight" : 1440,
+      "logicalWidth" : 2560,
+      "main" : true,
+      "pixelHeight" : 1440,
+      "pixelWidth" : 2560,
+      "vendor" : 1507,
+      "x" : 0,
+      "y" : 0
+    }
+  ],
+  "before" : [
+    {
+      "id" : 1,
+      "logicalHeight" : 1440,
+      "logicalWidth" : 2560,
+      "main" : true,
+      "pixelHeight" : 1440,
+      "pixelWidth" : 2560,
+      "vendor" : 1507,
+      "x" : 0,
+      "y" : 0
+    }
+  ],
+  "error" : null,
+  "stages" : [
+    {
+      "passed" : true,
+      "screens" : [
+        {
+          "id" : 1,
+          "logicalHeight" : 1440,
+          "logicalWidth" : 2560,
+          "main" : false,
+          "pixelHeight" : 1440,
+          "pixelWidth" : 2560,
+          "vendor" : 1507,
+          "x" : 1366,
+          "y" : 0
+        },
+        {
+          "id" : 14,
+          "logicalHeight" : 1024,
+          "logicalWidth" : 1366,
+          "main" : true,
+          "pixelHeight" : 2048,
+          "pixelWidth" : 2732,
+          "vendor" : 20548,
+          "x" : 0,
+          "y" : 0
+        }
+      ],
+      "stage" : "iPad Air 13 测试"
+    },
+    {
+      "passed" : true,
+      "screens" : [
+        {
+          "id" : 1,
+          "logicalHeight" : 1440,
+          "logicalWidth" : 2560,
+          "main" : false,
+          "pixelHeight" : 1440,
+          "pixelWidth" : 2560,
+          "vendor" : 1507,
+          "x" : 1368,
+          "y" : 0
+        },
+        {
+          "id" : 15,
+          "logicalHeight" : 630,
+          "logicalWidth" : 1368,
+          "main" : true,
+          "pixelHeight" : 1260,
+          "pixelWidth" : 2736,
+          "vendor" : 20548,
+          "x" : 0,
+          "y" : 0
+        }
+      ],
+      "stage" : "iPhone Air 测试"
+    },
+    {
+      "passed" : true,
+      "screens" : [
+        {
+          "id" : 1,
+          "logicalHeight" : 1440,
+          "logicalWidth" : 2560,
+          "main" : true,
+          "pixelHeight" : 1440,
+          "pixelWidth" : 2560,
+          "vendor" : 1507,
+          "x" : 0,
+          "y" : 0
+        }
+      ],
+      "stage" : "restore"
+    }
+  ],
+  "success" : true,
+  "timestamp" : "2026-10-13T03:03:26Z"
+}

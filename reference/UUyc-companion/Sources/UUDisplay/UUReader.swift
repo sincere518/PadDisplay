@@ -105,13 +105,15 @@ enum UUReader {
             var inner: [AXUIElement] = []
             flatten(row, into: &inner)
             let texts = inner.filter { role($0) == kAXStaticTextRole }.compactMap { value($0) }
-            // 只接受带「远程控制」标记的行，避免其他表格误触发连入。
-            guard texts.contains("远程控制") else { continue }
-            if let n = texts.first(where: { $0 != "远程控制" && !$0.hasPrefix("连接时长") && !$0.isEmpty }),
-               !names.contains(n) {
+            if let n = controllerName(in: texts), !names.contains(n) {
                 names.append(n)
             }
         }
         return names
+    }
+
+    static func controllerName(in texts: [String]) -> String? {
+        guard texts.contains("远程控制") else { return nil }
+        return texts.first { $0 != "远程控制" && !$0.hasPrefix("连接时长") && !$0.isEmpty }
     }
 }

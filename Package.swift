@@ -1,26 +1,15 @@
-// swift-tools-version:5.9
+// swift-tools-version: 5.9
 import PackageDescription
 
 let package = Package(
-    name: "UUDisplay",
+    name: "PadDisplay",
     platforms: [.macOS(.v14)],
-    dependencies: [
-        // 权限引导：打开系统设置隐私页 + 拖拽授权悬浮面板（MIT，内置副本见 Vendor/PermissionFlow/VENDORED.md）
-        .package(path: "Vendor/PermissionFlow"),
-        // 首次启动功能导览（MIT，内置副本见 Vendor/TourKit/VENDORED.md）
-        .package(path: "Vendor/TourKit"),
-    ],
+    products: [.executable(name: "PadDisplay", targets: ["PadDisplay"])],
     targets: [
-        .target(name: "CGVirtualDisplayBridge"),
-        .executableTarget(name: "vdprobe", dependencies: ["CGVirtualDisplayBridge"]),
-        .executableTarget(name: "uuprobe"),
-        .executableTarget(name: "uuwatch"),
-        .executableTarget(name: "UUDisplay", dependencies: [
-            "CGVirtualDisplayBridge",
-            .product(name: "PermissionFlow", package: "PermissionFlow"),
-            .product(name: "SystemSettingsKit", package: "PermissionFlow"),
-            .product(name: "TourKit", package: "TourKit"),
-        ]),
-        .executableTarget(name: "dispoff", dependencies: ["CGVirtualDisplayBridge"]),
+        .target(name: "PadDisplayCore"),
+        .target(name: "DisplayBridge", cSettings: [.unsafeFlags(["-fobjc-arc"])],
+                linkerSettings: [.linkedFramework("CoreGraphics")]),
+        .executableTarget(name: "PadDisplay", dependencies: ["PadDisplayCore", "DisplayBridge"]),
+        .testTarget(name: "PadDisplayCoreTests", dependencies: ["PadDisplayCore"]),
     ]
 )
