@@ -1,0 +1,41 @@
+{
+  "started_at": "2026-10-13T04:36:58.063459+00:00",
+  "test_directory": "/Volumes/数据盘/项目文件/远程分辨率调整插件/evidence/phone-e2e-20261013-01",
+  "app_sha256": "0e2751c626a5062e6316943004d02e01d15128006214589fd1f58fc8ac176225",
+  "saved_original_positions": [
+    {
+      "model": 10103,
+      "serial": 980274,
+      "id": 1,
+      "vendor": 1507,
+      "x": 0,
+      "y": 0
+    }
+  ],
+  "previous_verified_original_desktop": [
+    {
+      "id": 1,
+      "logicalHeight": 1440,
+      "logicalWidth": 2560,
+      "main": true,
+      "pixelHeight": 1440,
+      "pixelWidth": 2560,
+      "vendor": 1507,
+      "x": 0,
+      "y": 0
+    }
+  ],
+  "automatic": true,
+  "saved_profiles": [
+    {
+      "id": "E465D385-0ED8-4C6C-B15E-D5443BDA39B6",
+      "spec": {
+        "width": 2732,
+        "height": 2048,
+        "hiDPI": true
+      },
+      "enabled": true,
+      "name": "iPad Air (13 英寸, M2)"
+    }
+  ]
+}
