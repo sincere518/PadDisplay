@@ -7,7 +7,9 @@ trap 'rm -rf "$TEST_DIR"' EXIT
 mkdir -p "$TEST_DIR/project/script"
 cp "${1:-$ROOT_DIR/script/build_and_run.sh}" "$TEST_DIR/project/script/build_and_run.sh"
 export TEST_DIR
+export SIGN_IDENTITY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 cat > "$TEST_DIR/mocks.sh" <<'MOCKS'
+security() { echo '  1) AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA "Apple Development: Test"'; }
 pgrep() { echo 4242; }
 ps() {
   [[ -e "$TEST_DIR/stopped" ]] && return 1

@@ -1,0 +1,7 @@
+PASS: missing-identity => status=1 built=no
+PASS: pinned-identity => status=88 built=yes
+PASS: unavailable-pinned-identity => status=1 built=no
+PASS: no-ad-hoc-production => status=1 built=no
+PASS: explicit-certificate => status=88 built=yes
+PASS: unknown-certificate => status=1 built=no
+PASS: preview-main-bundle-requires-identity => status=1 built=no

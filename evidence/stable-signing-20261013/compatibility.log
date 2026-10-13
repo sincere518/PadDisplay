@@ -1,0 +1,6 @@
+build/signing-check/PadDisplay-next.app: valid on disk
+build/signing-check/PadDisplay-next.app: satisfies its Designated Requirement
+build/signing-check/PadDisplay-next.app: explicit requirement satisfied
+dist/PadDisplay.app: valid on disk
+dist/PadDisplay.app: satisfies its Designated Requirement
+dist/PadDisplay.app: explicit requirement satisfied

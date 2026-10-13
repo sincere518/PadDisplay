@@ -7,7 +7,7 @@ MODE="${1:-run}"
 CONFIGURATION="${CONFIGURATION:-debug}"
 APP_BUNDLE="$ROOT_DIR/dist/PadDisplay.app"
 APP_BINARY="$APP_BUNDLE/Contents/MacOS/PadDisplay"
-VERSION=0.2.1
+VERSION=0.2.2
 PREVIEW_BUNDLE="$ROOT_DIR/build/UIValidation/PadDisplay UI验证.app"
 PREVIEW_BINARY="$PREVIEW_BUNDLE/Contents/MacOS/PadDisplay"
 if [[ -z "${DEVELOPER_DIR:-}" && -d /Applications/Xcode-beta.app/Contents/Developer ]]; then
@@ -40,6 +40,19 @@ for pid in $(pgrep -x PadDisplay || true); do
     exit 1
   fi
 done
+SIGNING_IDENTITY="${SIGN_IDENTITY:-}"
+if [[ -z "$SIGNING_IDENTITY" && -f "$ROOT_DIR/script/signing.identity.local" ]]; then
+  IFS= read -r SIGNING_IDENTITY < "$ROOT_DIR/script/signing.identity.local" || true
+fi
+if [[ -z "$SIGNING_IDENTITY" || "$SIGNING_IDENTITY" == - ]]; then
+  echo "请配置固定的 Apple 签名证书：设置 SIGN_IDENTITY，或把证书 SHA-1 写入 script/signing.identity.local。" >&2
+  exit 1
+fi
+if ! security find-identity -v -p codesigning | awk -v identity="$SIGNING_IDENTITY" \
+  '$2 == identity || index($0, "\"" identity "\"") > 0 { found = 1 } END { exit !found }'; then
+  echo "配置的签名证书不可用，请检查钥匙串中的有效证书及对应私钥。" >&2
+  exit 1
+fi
 if [[ "${#STAGED_PIDS[@]}" -gt 0 ]]; then
   for pid in "${STAGED_PIDS[@]}"; do
     kill -TERM "$pid"
@@ -75,14 +88,14 @@ cat > "$APP_BUNDLE/Contents/Info.plist" <<PLIST
 <key>CFBundleExecutable</key><string>PadDisplay</string>
 <key>CFBundlePackageType</key><string>APPL</string>
 <key>CFBundleShortVersionString</key><string>$VERSION</string>
-<key>CFBundleVersion</key><string>4</string>
+<key>CFBundleVersion</key><string>5</string>
 <key>CFBundleIconFile</key><string>AppIcon</string>
 <key>LSMinimumSystemVersion</key><string>14.0</string>
 <key>NSHighResolutionCapable</key><true/>
 <key>NSPrincipalClass</key><string>NSApplication</string>
 </dict></plist>
 PLIST
-codesign --force --sign "${SIGN_IDENTITY:--}" --options runtime "$APP_BUNDLE"
+codesign --force --sign "$SIGNING_IDENTITY" --options runtime "$APP_BUNDLE"
 codesign --verify --strict --deep "$APP_BUNDLE"
 
 case "$MODE" in

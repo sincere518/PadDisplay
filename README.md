@@ -2,7 +2,7 @@
 
 独立的原生 macOS 应用。读取 UU远程当前的连接设备名称，按每台设备保存的尺寸创建高清虚拟屏幕；断开后移除虚拟屏幕并恢复原显示器布局。
 
-源码与打包版本为 **0.2.1**，采用原生侧边栏、Liquid Glass 控件、配置浮层、设置和关于窗口。项目内已生成安装包，当前 Mac 已安装的 **0.1.0** 未被替换。0.2.0 已通过回归测试与隔离原生 UI 验证；0.2.1 将 iPhone 机身示意固定为竖直展示，远程屏幕配置保持原有行为。真实 iPad / 手机连接记录对应 0.1.0。
+源码与打包版本为 **0.2.2**，采用原生侧边栏、Liquid Glass 控件、配置浮层、设置和关于窗口。0.2.0 已通过回归测试与隔离原生 UI 验证；0.2.1 将 iPhone 机身示意固定为竖直展示；0.2.2 固定使用本机配置的 Apple 签名证书，避免升级时临时签名变化导致已有权限失效。真实 iPad / 手机连入和断开记录对应 0.1.0，当前签名与安装验证见 [签名记录](docs/signing-2026-10-13.md)。
 
 ## 使用
 
@@ -12,6 +12,8 @@
 4. 保持 UU远程主界面可读取，打开工具栏的「自动匹配」。软件按「本机被控中」的设备名称识别，不依赖是否出现远控覆盖窗口。
 5. 已有设备自动应用自己的配置；明确型号的新设备会自动预填。无法确定型号时，点击「添加设备」，填写 UU远程中显示的完整设备名并选择型号或自定义尺寸。
 6. 在 iPad / 手机的 UU远程显示器列表里选中 **PadDisplay · 设备名**。Mac 主屏已切换不代表 UU 客户端一定会自动切换其采集的显示器。
+
+从 0.2.1 及更早的临时签名版本升级到 0.2.2 时，需要重新授权一次：在该隐私设置中移除旧的 PadDisplay 项，重新添加「应用程序」中的 PadDisplay 并开启权限。后续保持相同证书和 Bundle ID 打包时，正常升级通常能沿用授权；系统或用户撤销权限时仍需重新开启。
 
 选择侧边栏设备只查看配置，不切换屏幕。未连接设备显示「配置预览」，尺寸明确标为保存参数。「恢复原桌面」会结束当前调整，并暂停本次连接的自动调整；点击「继续自动匹配」恢复识别，下一次连接也会继续识别。「立即应用」可在无连接识别权限时手动验证显示效果；手动屏幕保持到恢复、切换自动匹配开关或退出。关闭主窗口后程序继续在菜单栏工作；退出程序会先恢复桌面。
 
@@ -43,6 +45,15 @@
 
 需要 macOS 14+，Swift 5.9+，以及提供 macOS SDK 的 Xcode / Command Line Tools。当前产物针对 Apple Silicon。
 
+正式应用必须使用固定的 Apple 签名证书。先查看钥匙串中的有效代码签名身份，选择一张含私钥的证书，并将它的 SHA-1 指纹写入被 Git 忽略的本机配置：
+
+```sh
+security find-identity -v -p codesigning
+printf '%s\n' '填入选定证书的 SHA-1 指纹' > script/signing.identity.local
+```
+
+后续版本复用这份配置。也可通过 `SIGN_IDENTITY` 显式指定证书；缺少配置、指定证书不可用或指定临时签名 `-` 时，脚本会在构建和结束旧进程前停止，不会自动改用其他身份。该配置只记录证书指纹，私钥由钥匙串管理。
+
 ```sh
 ./script/build_and_run.sh --build
 ./script/build_and_run.sh --package
@@ -62,6 +73,7 @@ CLANG_MODULE_CACHE_PATH="$PWD/build/clang-cache" \
   xcrun swift test --build-system native --scratch-path build/swift-native \
   --cache-path build/swift-cache --disable-sandbox
 bash Tests/ScriptTests/check_build_guard.sh
+bash Tests/ScriptTests/check_signing.sh
 ```
 
 `.codex/environments/environment.toml` 已绑定 Run 按钮。
@@ -84,11 +96,13 @@ bash Tests/ScriptTests/check_build_guard.sh
 
 [代码审查](docs/review-2026-10-13.md) 记录 0.1.1 的全量检查。0.2.0 的 19 项 XCTest 与 5 个脚本场景通过，恢复测试使用临时目录；[原生 UI 验证](docs/native-ui-2026-10-13.md) 记录浅深色截图、配置校验、草稿取消、窗口和关于交互。
 
+0.2.2 的 7 个签名配置场景与 5 个进程保护场景通过；使用同一证书签名的 0.2.2 与仅用于验证的下一版本副本，代码哈希不同，但双方均通过对方的应用身份要求校验。详见 [签名记录](docs/signing-2026-10-13.md)。
+
 [0.1.0 验证记录](docs/validation.md) 保存本机虚拟屏自测、真实 iPad 验收及 iPhone 17 Pro Max 连入 / 断开 / iPad 重连证据。0.2.1 尚未重新进行真实客户端切换验收。Liquid Glass 在 macOS 26+ 启用，旧系统使用标准控件样式；本轮原生运行验证在 macOS 27 完成，未单独运行 macOS 26。
 
 应用不请求网络连接，不读取 UU账号令牌。设置保存在独立的 `local.PadDisplay` 偏好域；临时布局记录保存在 `~/Library/Application Support/PadDisplay/display-session.json`。恢复时同时核对显示器 ID、厂商、型号和序列号，避免把旧布局应用到不匹配的显示器。
 
-虚拟屏幕使用 macOS 私有 `CGVirtualDisplay` 接口，系统升级可能需要适配。当前安装包为本地 ad-hoc 签名，未经过 Apple 公证；重新编译产生新签名后，辅助功能权限可能需要重新授权。
+虚拟屏幕使用 macOS 私有 `CGVirtualDisplay` 接口，系统升级可能需要适配。当前安装包使用固定的 Apple Development 证书，供本机开发使用，未经过 Apple 公证；对外公开分发应使用 Developer ID Application 证书及公证流程。`--preview` 的隔离 UI 副本仍使用临时签名和独立 Bundle ID，不用于实际远程连接。
 
 ## 源码关系
 
