@@ -18,7 +18,7 @@
   "scriptSigningCases": 7,
   "scriptProcessGuardCases": 5,
   "installedVersionBefore": "0.2.1",
-  "permissionRecovery": "pending user consent for the certificate-signed identity",
+  "permissionRecovery": "confirmed after user removed and re-added the installed app",
   "privateKeyExported": false,
   "notarized": false,
   "installedVersionAfter": "0.2.2",
@@ -30,5 +30,25 @@
   "oldVirtualDisplayRemovedOnNormalExit": true,
   "physicalDisplayRestoredAsMain": true,
   "UUProcessesUnchanged": true,
-  "appLaunched": true
+  "appLaunched": true,
+  "realIPadConnectionRecognized": true,
+  "mainWindowObservedConnection": "iPad Air 13 英寸 · 已连接",
+  "mainWindowObservedStatus": "屏幕已就绪 · 已自动应用此设备的屏幕配置。",
+  "globalAutomaticToggle": "on",
+  "manualDisplayModeObserved": false,
+  "automaticVirtualDisplayAfterConsent": {
+    "name": "PadDisplay · iPad Air (13 英寸, M2)",
+    "outputPixels": [
+      2732,
+      2048
+    ],
+    "logicalDesktop": [
+      1366,
+      1024
+    ],
+    "refreshRateHz": 60,
+    "isMainDisplay": true
+  },
+  "phoneSwitchRetestedInVersion022": false,
+  "remoteDisconnectRetestedInVersion022": false
 }

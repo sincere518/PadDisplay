@@ -98,7 +98,7 @@ bash Tests/ScriptTests/check_signing.sh
 
 0.2.2 的 7 个签名配置场景与 5 个进程保护场景通过；使用同一证书签名的 0.2.2 与仅用于验证的下一版本副本，代码哈希不同，但双方均通过对方的应用身份要求校验。详见 [签名记录](docs/signing-2026-10-13.md)。
 
-[0.1.0 验证记录](docs/validation.md) 保存本机虚拟屏自测、真实 iPad 验收及 iPhone 17 Pro Max 连入 / 断开 / iPad 重连证据。0.2.1 尚未重新进行真实客户端切换验收。Liquid Glass 在 macOS 26+ 启用，旧系统使用标准控件样式；本轮原生运行验证在 macOS 27 完成，未单独运行 macOS 26。
+[0.1.0 验证记录](docs/validation.md) 保存本机虚拟屏自测、真实 iPad 验收及 iPhone 17 Pro Max 连入 / 断开 / iPad 重连证据。0.2.2 已确认重新授权后自动识别真实 iPad 连接，创建 2732 × 2048 像素、1366 × 1024 逻辑桌面的主虚拟屏幕；本次没有重新测试手机切换及远程断开恢复。Liquid Glass 在 macOS 26+ 启用，旧系统使用标准控件样式；本轮原生运行验证在 macOS 27 完成，未单独运行 macOS 26。
 
 应用不请求网络连接，不读取 UU账号令牌。设置保存在独立的 `local.PadDisplay` 偏好域；临时布局记录保存在 `~/Library/Application Support/PadDisplay/display-session.json`。恢复时同时核对显示器 ID、厂商、型号和序列号，避免把旧布局应用到不匹配的显示器。
 
