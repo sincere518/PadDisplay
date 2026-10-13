@@ -2,7 +2,7 @@
 
 独立的原生 macOS 应用。读取 UU远程当前的连接设备名称，按每台设备保存的尺寸创建高清虚拟屏幕；断开后移除虚拟屏幕并恢复原显示器布局。
 
-源码与打包版本为 **0.2.0**，采用原生侧边栏、Liquid Glass 控件、配置浮层、设置和关于窗口。项目内已生成安装包，当前 Mac 已安装的 **0.1.0** 未被替换。0.2.0 已通过回归测试与隔离原生 UI 验证，真实 iPad / 手机连接记录对应 0.1.0。
+源码与打包版本为 **0.2.1**，采用原生侧边栏、Liquid Glass 控件、配置浮层、设置和关于窗口。项目内已生成安装包，当前 Mac 已安装的 **0.1.0** 未被替换。0.2.0 已通过回归测试与隔离原生 UI 验证；0.2.1 将 iPhone 机身示意固定为竖直展示，远程屏幕配置保持原有行为。真实 iPad / 手机连接记录对应 0.1.0。
 
 ## 使用
 
@@ -27,7 +27,7 @@
 
 侧边栏「关于 PadDisplay」及标准应用菜单均可打开关于窗口，展示作者 **耳过清风**、小红书号 **5397290838**、实际包版本及本地许可；号码支持复制。`⌘,` 打开设置，`Escape` 取消编辑，`Return` 保存有效配置。
 
-设备预览使用原创蓝紫流线壁纸，跟随浅色 / 深色外观；iPad 默认横屏，iPhone 使用写实机身 PNG，保留灵动岛和侧键。壁纸仅用于应用内预览，素材来源和使用说明见 [DevicePreviews](Resources/DevicePreviews/README.md)。
+设备预览使用原创蓝紫流线壁纸，跟随浅色 / 深色外观；iPad 默认横屏，iPhone 使用写实机身 PNG，固定竖直展示并保留灵动岛和侧键。远程屏幕的实际方向仍按保存配置应用。壁纸仅用于应用内预览，素材来源和使用说明见 [DevicePreviews](Resources/DevicePreviews/README.md)。
 
 内置尺寸来自 Apple 官方技术规格：
 
@@ -84,7 +84,7 @@ bash Tests/ScriptTests/check_build_guard.sh
 
 [代码审查](docs/review-2026-10-13.md) 记录 0.1.1 的全量检查。0.2.0 的 19 项 XCTest 与 5 个脚本场景通过，恢复测试使用临时目录；[原生 UI 验证](docs/native-ui-2026-10-13.md) 记录浅深色截图、配置校验、草稿取消、窗口和关于交互。
 
-[0.1.0 验证记录](docs/validation.md) 保存本机虚拟屏自测、真实 iPad 验收及 iPhone 17 Pro Max 连入 / 断开 / iPad 重连证据。0.2.0 尚未重新进行真实客户端切换验收。Liquid Glass 在 macOS 26+ 启用，旧系统使用标准控件样式；本轮原生运行验证在 macOS 27 完成，未单独运行 macOS 26。
+[0.1.0 验证记录](docs/validation.md) 保存本机虚拟屏自测、真实 iPad 验收及 iPhone 17 Pro Max 连入 / 断开 / iPad 重连证据。0.2.1 尚未重新进行真实客户端切换验收。Liquid Glass 在 macOS 26+ 启用，旧系统使用标准控件样式；本轮原生运行验证在 macOS 27 完成，未单独运行 macOS 26。
 
 应用不请求网络连接，不读取 UU账号令牌。设置保存在独立的 `local.PadDisplay` 偏好域；临时布局记录保存在 `~/Library/Application Support/PadDisplay/display-session.json`。恢复时同时核对显示器 ID、厂商、型号和序列号，避免把旧布局应用到不匹配的显示器。
 

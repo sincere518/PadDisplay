@@ -1,6 +1,6 @@
 # 设备预览素材
 
-`iphone-frame.png` 是 AppLaunchFlow 提供的 iPhone 17 Pro Max 系列写实正面机身 PNG，保持原文件，透明屏幕开口由原生 SwiftUI 壁纸填充。素材本身包含金属边缘、侧键、灵动岛和镜头；应用按保存方向旋转机身，不对外框做非等比拉伸。
+`iphone-frame.png` 是 AppLaunchFlow 提供的 iPhone 17 Pro Max 系列写实正面机身 PNG，保持原文件，透明屏幕开口由原生 SwiftUI 壁纸填充。素材本身包含金属边缘、侧键、灵动岛和镜头；机身示意固定竖直展示，不对外框做非等比拉伸。远程屏幕的分辨率与横竖屏仍按保存配置应用。
 
 - [来源及使用说明](https://www.applaunchflow.com/tools/mockup-generator/iphone-17-pro-max)
 - [原始 PNG](https://www.applaunchflow.com/mockups/iphone17-3d-flat.png)

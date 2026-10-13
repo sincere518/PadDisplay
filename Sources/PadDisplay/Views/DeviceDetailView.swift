@@ -119,7 +119,7 @@ private struct DevicePreview: View {
     var body: some View {
         if spec.validationError == nil {
             if symbol == "iphone", let frame = Self.phoneFrame {
-                PhonePreview(frame: frame, landscape: spec.width >= spec.height)
+                PhonePreview(frame: frame)
             } else {
                 ZStack {
                     RoundedRectangle(cornerRadius: 10).fill(.black.opacity(scheme == .dark ? 0.6 : 0.9))
@@ -137,27 +137,23 @@ private struct DevicePreview: View {
 
 private struct PhonePreview: View {
     var frame: NSImage
-    var landscape: Bool
 
     var body: some View {
         GeometryReader { geometry in
-            let w = landscape ? geometry.size.height : geometry.size.width
-            let h = landscape ? geometry.size.width : geometry.size.height
+            let w = geometry.size.width
+            let h = geometry.size.height
             // 素材为 1311 × 2708；透明屏幕开口为 (52, 42, 1208, 2624)。
             let screenWidth = w * 1208 / 1311
             let screenHeight = h * 2624 / 2708
             ZStack(alignment: .topLeading) {
                 PreviewWallpaper()
-                    .frame(width: landscape ? screenHeight : screenWidth, height: landscape ? screenWidth : screenHeight)
-                    .rotationEffect(.degrees(landscape ? 90 : 0))
                     .frame(width: screenWidth, height: screenHeight)
                     .clipShape(RoundedRectangle(cornerRadius: w * 0.13))
                     .offset(x: w * 52 / 1311, y: h * 42 / 2708)
                 Image(nsImage: frame).resizable().frame(width: w, height: h)
             }.frame(width: w, height: h)
-                .rotationEffect(.degrees(landscape ? -90 : 0))
                 .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
-        }.aspectRatio(landscape ? 2708.0 / 1311 : 1311.0 / 2708, contentMode: .fit)
+        }.aspectRatio(1311.0 / 2708, contentMode: .fit)
             .shadow(color: .black.opacity(0.16), radius: 8, y: 4)
     }
 }

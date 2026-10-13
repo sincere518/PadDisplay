@@ -7,7 +7,7 @@ MODE="${1:-run}"
 CONFIGURATION="${CONFIGURATION:-debug}"
 APP_BUNDLE="$ROOT_DIR/dist/PadDisplay.app"
 APP_BINARY="$APP_BUNDLE/Contents/MacOS/PadDisplay"
-VERSION=0.2.0
+VERSION=0.2.1
 PREVIEW_BUNDLE="$ROOT_DIR/build/UIValidation/PadDisplay UI验证.app"
 PREVIEW_BINARY="$PREVIEW_BUNDLE/Contents/MacOS/PadDisplay"
 if [[ -z "${DEVELOPER_DIR:-}" && -d /Applications/Xcode-beta.app/Contents/Developer ]]; then
@@ -75,7 +75,7 @@ cat > "$APP_BUNDLE/Contents/Info.plist" <<PLIST
 <key>CFBundleExecutable</key><string>PadDisplay</string>
 <key>CFBundlePackageType</key><string>APPL</string>
 <key>CFBundleShortVersionString</key><string>$VERSION</string>
-<key>CFBundleVersion</key><string>3</string>
+<key>CFBundleVersion</key><string>4</string>
 <key>CFBundleIconFile</key><string>AppIcon</string>
 <key>LSMinimumSystemVersion</key><string>14.0</string>
 <key>NSHighResolutionCapable</key><true/>
