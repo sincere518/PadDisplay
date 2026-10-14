@@ -95,9 +95,11 @@ final class AppController {
         refreshShortcuts()
         updates.scheduleChecks()
         poll()
-        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+        let timer = Timer(timeInterval: 1, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.poll() }
         }
+        RunLoop.main.add(timer, forMode: .common)
+        self.timer = timer
     }
 
     private func poll() {
@@ -225,6 +227,7 @@ final class AppController {
 
     private func received(_ reading: ConnectionReading) {
         controllers = tracker.update(reading.controllers, reportedCount: reading.controllerCount, now: Date())
+        discovered.formIntersection(controllers)
         connectionStatus = reading.detail
         for name in controllers where !discovered.contains(name) {
             discovered.insert(name)

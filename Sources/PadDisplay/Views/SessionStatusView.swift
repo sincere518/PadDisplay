@@ -29,6 +29,10 @@ struct SessionStatusView: View {
             VStack(alignment: .leading, spacing: 5) {
                 Text(model.report.busy ? model.report.message : model.sessionState.title).font(.headline)
                 Text(detail).font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                if model.report.failed, !model.controllers.isEmpty {
+                    Text("已识别设备：\(model.controllers.joined(separator: "、"))")
+                        .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                }
             }
             Spacer(minLength: 12)
             switch model.sessionState {
@@ -40,6 +44,9 @@ struct SessionStatusView: View {
                 Button("继续自动匹配") { model.resumeAutomatic() }.appButton(prominent: true)
             case .recoveryFailed:
                 Button("重试恢复") { model.restore() }.appButton()
+                if model.controllers.contains(where: { name in !model.profiles.contains { $0.name == name } }) {
+                    Button("配置此设备", action: configure).appButton()
+                }
             case .waiting:
                 Button("打开 UU远程") { model.openUU() }.appButton()
             default: EmptyView()

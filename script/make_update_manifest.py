@@ -18,6 +18,6 @@ manifest = {
     "minimumSystemVersion": "14.0",
     "downloadURL": f"{base_url.rstrip('/')}/{filename}",
     "sha256": hashlib.sha256((directory / filename).read_bytes()).hexdigest(),
-    "notes": "固定设备屏幕身份；还原显示模式与普通窗口；显示预设和可视区域；主屏／扩展策略；菜单栏收藏、快捷键；连接助手、配置备份；DMG 与应用内更新。",
+    "notes": "修复设备切换或读取超时后再次连入时未重新发现机型的问题；实体显示器关闭时仍可使用远程主屏，并保留原桌面恢复记录；菜单打开时继续检查连接，恢复提示中显示已识别设备。",
 }
 (directory / "PadDisplay-update.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

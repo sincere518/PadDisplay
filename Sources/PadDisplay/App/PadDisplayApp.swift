@@ -50,6 +50,20 @@ import PadDisplayCore
     private var terminating = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        let args = CommandLine.arguments
+        if let index = args.firstIndex(of: "--diagnose"), index + 1 < args.count {
+            let reader = UUConnectionReader()
+            reader.sample { reading in
+                Diagnostics.write(["authorized": UUConnectionReader.authorized,
+                                   "controllers": reading.controllers as Any? ?? NSNull(),
+                                   "controllerCount": reading.controllerCount as Any? ?? NSNull(),
+                                   "detail": reading.detail, "screens": Diagnostics.screens()],
+                                  to: URL(fileURLWithPath: args[index + 1]))
+                self.terminating = true
+                NSApp.terminate(nil)
+            }
+            return
+        }
         if let existing = NSRunningApplication.runningApplications(withBundleIdentifier: "local.PadDisplay")
             .first(where: { $0.processIdentifier != ProcessInfo.processInfo.processIdentifier }) {
             existing.activate()
@@ -59,19 +73,6 @@ import PadDisplayCore
         }
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
-        let args = CommandLine.arguments
-        if let index = args.firstIndex(of: "--diagnose"), index + 1 < args.count {
-            let reader = UUConnectionReader()
-            reader.sample { reading in
-                Diagnostics.write(["authorized": UUConnectionReader.authorized,
-                                   "controllers": reading.controllers as Any? ?? NSNull(),
-                                   "detail": reading.detail, "screens": Diagnostics.screens()],
-                                  to: URL(fileURLWithPath: args[index + 1]))
-                self.terminating = true
-                NSApp.terminate(nil)
-            }
-            return
-        }
         AppController.shared.start()
     }
 

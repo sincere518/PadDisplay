@@ -7,7 +7,7 @@ MODE="${1:-run}"
 CONFIGURATION="${CONFIGURATION:-debug}"
 APP_BUNDLE="$ROOT_DIR/dist/PadDisplay.app"
 APP_BINARY="$APP_BUNDLE/Contents/MacOS/PadDisplay"
-VERSION=0.3.0
+VERSION=0.3.1
 if [[ -z "${DEVELOPER_DIR:-}" && -d /Applications/Xcode-beta.app/Contents/Developer ]]; then
   export DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer
 fi
@@ -82,7 +82,7 @@ cat > "$APP_BUNDLE/Contents/Info.plist" <<PLIST
 <key>CFBundleExecutable</key><string>PadDisplay</string>
 <key>CFBundlePackageType</key><string>APPL</string>
 <key>CFBundleShortVersionString</key><string>$VERSION</string>
-<key>CFBundleVersion</key><string>7</string>
+<key>CFBundleVersion</key><string>8</string>
 <key>CFBundleIconFile</key><string>AppIcon</string>
 <key>LSMinimumSystemVersion</key><string>14.0</string>
 <key>NSHighResolutionCapable</key><true/>
@@ -104,7 +104,7 @@ case "$MODE" in
     ln -s /Applications "$DMG_STAGE/Applications"
     hdiutil create -volname PadDisplay -srcfolder "$DMG_STAGE" -fs HFS+ -format UDZO -ov "$ROOT_DIR/dist/PadDisplay-$VERSION-arm64.dmg"
     rm -rf "$DMG_STAGE"
-    python3 script/make_update_manifest.py "$VERSION" 7 "$ROOT_DIR/dist" "${RELEASE_BASE_URL:-https://github.com/sincere518/PadDisplay/releases/download/v$VERSION}"
+    python3 script/make_update_manifest.py "$VERSION" 8 "$ROOT_DIR/dist" "${RELEASE_BASE_URL:-https://github.com/sincere518/PadDisplay/releases/download/v$VERSION}"
     (cd "$ROOT_DIR/dist" && shasum -a 256 "PadDisplay-$VERSION-arm64.zip" "PadDisplay-$VERSION-arm64.dmg" PadDisplay-update.json) > "$ROOT_DIR/dist/SHA256SUMS.txt"
     ;;
   --debug) lldb -- "$APP_BINARY" ;;

@@ -92,7 +92,7 @@ final class VirtualDisplayService {
             } catch let failure { error = failure }
             DispatchQueue.main.async {
                 self.busy = false
-                self.blocked = error != nil
+                self.blocked = error != nil && self.desired == nil
                 self.needsRecovery = error != nil
                 self.onChange?(.init(message: error?.localizedDescription ?? "准备就绪", failed: error != nil,
                                     recoveryNeeded: error != nil))
@@ -154,8 +154,13 @@ final class VirtualDisplayService {
             try FileManager.default.createDirectory(at: journal.deletingLastPathComponent(), withIntermediateDirectories: true)
             try JSONEncoder().encode(snapshot).write(to: journal, options: .atomic)
         }
-        if request.role == .extended, snapshot?.displays.contains(where: { $0.vendor != 0x756e6b6e || $0.model != 0x76697274 }) != true {
-            throw failure("扩展模式需要一台原显示器，请连接显示器或改用主显示器模式。")
+        if request.role == .extended {
+            let online = try Self.readOnlineDisplays()
+            guard snapshot?.displays.contains(where: {
+                ($0.vendor != 0x756e6b6e || $0.model != 0x76697274) && $0.resolve(in: online) != nil
+            }) == true else {
+                throw failure("扩展模式需要一台当前在线的原显示器，请连接显示器或改用主显示器模式。")
+            }
         }
         let spec = request.spec
         handle = PDDisplayCreate("PadDisplay · \(request.name)", UInt32(spec.width), UInt32(spec.height), request.serial)
@@ -265,7 +270,7 @@ final class VirtualDisplayService {
             }
             Thread.sleep(forTimeInterval: 0.7)
         }
-        guard targets.count == snapshot.displays.count else {
+        if final, targets.count != snapshot.displays.count {
             throw failure("原显示器已断开或身份不明确。已恢复可用屏幕，恢复记录将保留，请重新连接后重试。")
         }
         for (record, id) in targets {
@@ -282,7 +287,7 @@ final class VirtualDisplayService {
             self.snapshot = nil
             return skipped == 0 ? nil : "显示器已恢复；\(skipped) 个窗口未允许恢复位置（如全屏或受保护窗口）。"
         }
-        return nil
+        return targets.count == snapshot.displays.count ? nil : "原显示器暂不可用，原桌面恢复记录已保留；显示器上线后可重试恢复。"
     }
 
     private func configure(_ body: (CGDisplayConfigRef?) -> CGError) throws {

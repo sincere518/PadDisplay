@@ -2,7 +2,7 @@
 
 **让远程桌面，刚好适合你的屏幕。**
 
-![Version 0.3.0](https://img.shields.io/badge/version-0.3.0-007AFF)
+![Version 0.3.1](https://img.shields.io/badge/version-0.3.1-007AFF)
 ![macOS 14 or later](https://img.shields.io/badge/macOS-14%2B-24292F?logo=apple)
 ![Apple Silicon](https://img.shields.io/badge/architecture-Apple_Silicon-555555)
 ![SwiftUI](https://img.shields.io/badge/UI-SwiftUI-F05138?logo=swift&logoColor=white)
@@ -89,14 +89,14 @@ iPhone 的机身示意固定竖直，灵动岛位于顶部。实际远程桌面�
 
 ### 1. 获取应用
 
-当前版本为 **[0.3.0](https://github.com/sincere518/PadDisplay/releases/tag/v0.3.0)**。下载 [DMG 安装包](https://github.com/sincere518/PadDisplay/releases/download/v0.3.0/PadDisplay-0.3.0-arm64.dmg)，或使用 [ZIP 安装包](https://github.com/sincere518/PadDisplay/releases/download/v0.3.0/PadDisplay-0.3.0-arm64.zip)。获取本仓库源码后，也可按[从源码构建](#从源码构建)生成应用。
+当前版本为 **[0.3.1](https://github.com/sincere518/PadDisplay/releases/tag/v0.3.1)**。下载 [DMG 安装包](https://github.com/sincere518/PadDisplay/releases/download/v0.3.1/PadDisplay-0.3.1-arm64.dmg)，或使用 [ZIP 安装包](https://github.com/sincere518/PadDisplay/releases/download/v0.3.1/PadDisplay-0.3.1-arm64.zip)。获取本仓库源码后，也可按[从源码构建](#从源码构建)生成应用。
 
 正式打包产物为：
 
 ```text
 dist/PadDisplay.app
-dist/PadDisplay-0.3.0-arm64.dmg
-dist/PadDisplay-0.3.0-arm64.zip
+dist/PadDisplay-0.3.1-arm64.dmg
+dist/PadDisplay-0.3.1-arm64.zip
 dist/PadDisplay-update.json
 dist/SHA256SUMS.txt
 ```
@@ -199,7 +199,7 @@ dist/SHA256SUMS.txt
 
 更新包需通过 SHA-256、Bundle ID、版本、系统要求、架构与当前签名身份校验。安装前会恢复原桌面，随后替换应用并重新打开；目录不可写、签名身份不同或桌面尚未恢复时停止安装，并给出手动处理入口。
 
-维护者运行 `--package` 后，将 DMG、ZIP、`PadDisplay-update.json` 和 `SHA256SUMS.txt` 一并上传到 **`v0.3.0`** 的 GitHub Release。更新描述文件引用该标签下的 ZIP，内含实际 SHA-256；若使用其他标签或附件目录，打包时通过 `RELEASE_BASE_URL` 指定真实 HTTPS 目录。检查地址为：
+维护者运行 `--package` 后，将 DMG、ZIP、`PadDisplay-update.json` 和 `SHA256SUMS.txt` 一并上传到 **`v0.3.1`** 的 GitHub Release。更新描述文件引用该标签下的 ZIP，内含实际 SHA-256；若使用其他标签或附件目录，打包时通过 `RELEASE_BASE_URL` 指定真实 HTTPS 目录。检查地址为：
 
 ```text
 https://github.com/sincere518/PadDisplay/releases/latest/download/PadDisplay-update.json
@@ -226,6 +226,8 @@ https://github.com/sincere518/PadDisplay/releases/latest/download/PadDisplay-upd
 ### 实体显示器的使用
 
 可以保留 Mac 当前连接的实体显示器。PadDisplay 创建独立虚拟屏幕，按设备配置设为主屏或扩展屏，远程客户端选择该屏幕即可；恢复时会移除虚拟屏幕并还原原显示器模式与布局。仅有系统备用桌面时，需要使用主屏模式。
+
+实体显示器关闭或断开时，**主显示器模式仍可创建远程虚拟屏幕**。原桌面恢复记录会保留，原显示器重新上线后可点击「恢复原桌面」重试；软件不会把尚未恢复的桌面标为恢复完成。扩展模式要求原显示器当前在线。
 
 ### 手机转向后桌面尺寸没有变化
 
@@ -312,6 +314,7 @@ PadDisplay 通过 macOS 辅助功能读取 UU界面里的连接设备名称和�
 
 | 版本 | 主要变化 |
 | --- | --- |
+| 0.3.1 | 修复重连发现缓存与菜单轮询；实体屏关闭时可继续使用远程主屏，保留恢复记录 |
 | 0.3.0 | 固定屏幕身份、显示模式与窗口恢复、显示／区域预设、主屏／扩展策略、收藏快捷操作、引导诊断、配置备份、DMG 与更新 |
 | 0.2.3 | 整理正式交付目录，精简应用入口，保留正式应用及安装包 |
 | 0.2.2 | 固定证书签名，完成重新授权后的真实 iPad 自动匹配验证 |
@@ -325,6 +328,10 @@ PadDisplay 通过 macOS 辅助功能读取 UU界面里的连接设备名称和�
 本机实际核对了标准、更大文字、更多空间、横竖屏与半屏的显示输出，半屏 HiDPI 为 **1366 × 2048 像素 / 683 × 1024 逻辑桌面**；切换配置保持同一屏幕序列号。软件会显式选择目标模式，并核对像素与逻辑尺寸，避免 macOS 沿用不同缩放。恢复后当前原桌面为 **1920 × 1080 / 60 Hz**。全局快捷键、配置导出、合并、备份恢复和诊断导出均在原生应用中验证。
 
 更新检查、下载校验、替换与重新打开使用本地发布数据和临时旧版副本完成整套验证。安装包、更新描述与 SHA-256 校验文件随 [0.3.0 Release](https://github.com/sincere518/PadDisplay/releases/tag/v0.3.0) 提供。当前没有持续在线的实体显示器，扩展模式与多实体显示器恢复仍需对应硬件验收；不将这些范围算作已完成的实机验证。
+
+0.3.1 完成 **24 项针对性临时校验**，覆盖设备切换与读取超时后的重新发现、菜单跟踪模式下的轮询、实体屏关闭及部分显示器离线时继续使用主屏、恢复记录保留、扩展模式在线要求和启动时的请求衔接。在线显示器模式不支持、身份不明确和恢复未完成时，校验仍阻止错误地清除恢复记录。
+
+0.3.1 已在实体显示器关闭的 Mac Studio 上验证自动识别 **iPad Air 13 英寸（M2）**，启用 **2732 × 2048 像素 / 1366 × 1024 逻辑桌面**的虚拟主屏；原实体桌面恢复记录与升级前完全一致。实体显示器重新开机后的完整恢复，以及此版本的手机切换，尚未重新进行实机验收。
 
 私有 `CGVirtualDisplay` 接口及 UU界面结构可能随系统或远程软件升级变化。
 
