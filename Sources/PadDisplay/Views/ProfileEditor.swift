@@ -47,7 +47,7 @@ struct ProfileEditor: View {
         if name.isEmpty { return "填写 UU远程中显示的完整设备名。" }
         if model.profiles.contains(where: { $0.id != profile.id && $0.name == name }) { return "此设备名称已经有配置。" }
         guard let candidate else { return "宽和高需要为整数像素。" }
-        return candidate.enabled ? candidate.spec.validationError : nil
+        return candidate.enabled ? candidate.validationError : nil
     }
 
     private var dirty: Bool { profile != original || width != initialWidth || height != initialHeight }
@@ -83,10 +83,10 @@ struct ProfileEditor: View {
                         }.pickerStyle(.segmented).onChange(of: portrait) { _, isPortrait in
                             if let w = Int(width), let h = Int(height), (w < h) != isPortrait { swap(&width, &height) }
                         }
-                        Text("按保存的方向应用，不跟随设备实时旋转。")
+                        Text("可通过菜单栏或快捷键切换方向，不跟随设备实时旋转。")
                             .font(.caption).foregroundStyle(.secondary)
                         HStack {
-                            Text("输出像素")
+                            Text("完整屏幕像素")
                             Spacer()
                             HStack {
                                 TextField("宽", text: $width).labelsHidden()
@@ -97,8 +97,24 @@ struct ProfileEditor: View {
                             }.frame(width: 250).textFieldStyle(.roundedBorder)
                         }.accessibilityElement(children: .contain)
                         Toggle("高清文字（HiDPI）", isOn: $profile.spec.hiDPI)
-                        if let candidate, candidate.spec.validationError == nil {
-                            let desktopSize = "\(candidate.spec.width / (candidate.spec.hiDPI ? 2 : 1)) × \(candidate.spec.height / (candidate.spec.hiDPI ? 2 : 1))"
+                        Picker("显示预设", selection: $profile.density) {
+                            ForEach(DesktopDensity.allCases, id: \.self) { Text($0.label).tag($0) }
+                        }
+                        Picker("可视区域", selection: $profile.region) {
+                            ForEach(DisplayRegion.allCases, id: \.self) { Text($0.label).tag($0) }
+                        }
+                        Text("区域预设按保存宽度计算。分屏留白或工具栏占用不同时，可改用自定义像素校准。")
+                            .font(.caption).foregroundStyle(.secondary)
+                        Picker("屏幕用途", selection: $profile.role) {
+                            ForEach(DisplayRole.allCases, id: \.self) { Text($0.label).tag($0) }
+                        }
+                        Text("主显示器将远程屏幕置于桌面中心；扩展显示器保留原主屏，需要原显示器在线。")
+                            .font(.caption).foregroundStyle(.secondary)
+                        Toggle("收藏到菜单栏", isOn: $profile.favorite)
+                        if let candidate, candidate.validationError == nil {
+                            let output = candidate.effectiveSpec
+                            let desktopSize = "\(output.width / (output.hiDPI ? 2 : 1)) × \(output.height / (output.hiDPI ? 2 : 1))"
+                            LabeledContent("实际输出", value: output.label).foregroundStyle(.secondary)
                             LabeledContent("桌面尺寸", value: desktopSize)
                                 .foregroundStyle(.secondary)
                                 .accessibilityElement(children: .ignore).accessibilityLabel("桌面尺寸").accessibilityValue(desktopSize)
@@ -125,7 +141,7 @@ struct ProfileEditor: View {
                 }
             }.padding(20)
         }
-        .frame(width: 580, height: profile.enabled ? 620 : 400)
+        .frame(width: 600, height: profile.enabled ? 740 : 400)
         .interactiveDismissDisabled(dirty)
         .onAppear { if !existing { focus = .name } }
         .onSubmit(save)

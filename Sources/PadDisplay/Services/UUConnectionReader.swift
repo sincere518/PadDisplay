@@ -13,10 +13,11 @@ final class UUConnectionReader {
     static var authorized: Bool { AXIsProcessTrusted() }
     private let queue = DispatchQueue(label: "local.PadDisplay.connection")
     private var inFlight = false
+    private var waiting: [(ConnectionReading) -> Void] = []
 
     func sample(_ completion: @escaping (ConnectionReading) -> Void) {
         guard !inFlight else {
-            completion(.init(controllers: nil, detail: "正在等待 UU远程响应"))
+            waiting.append(completion)
             return
         }
         guard Self.authorized else {
@@ -29,6 +30,8 @@ final class UUConnectionReader {
             DispatchQueue.main.async {
                 self.inFlight = false
                 completion(reading)
+                let waiting = self.waiting; self.waiting = []
+                waiting.forEach { $0(reading) }
             }
         }
     }
@@ -93,6 +96,9 @@ final class UUConnectionReader {
         if !names.isEmpty { return .init(controllers: names, detail: "已识别连接设备", controllerCount: count) }
         if (count ?? 0) > 0 || titles.contains(where: { $0.contains("本机被控中") && !$0.contains("当前有 0 台") }) {
             return .init(controllers: nil, detail: "UU 正在被控，但尚未读到设备名称", controllerCount: count)
+        }
+        if titles.contains(where: { $0.contains("无法连接至服务器") || $0.contains("无法连接到服务器") }) {
+            return .init(controllers: nil, detail: "UU界面显示无法连接服务器，尚未读到被控设备。")
         }
         return .init(controllers: [], detail: "等待远程设备连接")
     }

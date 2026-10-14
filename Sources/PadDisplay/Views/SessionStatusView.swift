@@ -14,14 +14,14 @@ struct SessionStatusView: View {
         case .companion: "请先退出其他显示助手，再由 PadDisplay 调整屏幕。"
         case .disabled: "可手动应用屏幕配置，或重新打开自动匹配。"
         case .inactive: "此设备的配置已保存，连入时保持原桌面。"
-        case .waiting: "设备连入后按已保存的配置匹配，断开后恢复原桌面。"
+        case .waiting: model.connectionStatus
         default: model.connectionStatus
         }
     }
 
     var body: some View {
         HStack(alignment: .center, spacing: 14) {
-            if model.report.busy { ProgressView().controlSize(.small).frame(width: 28) }
+            if model.report.busy { ProgressView().controlSize(.small).frame(width: 28).accessibilityHidden(true) }
             else {
                 Image(systemName: model.sessionState.symbol)
                     .font(.system(size: 26)).foregroundStyle(model.sessionState.color).frame(width: 28)
@@ -29,7 +29,6 @@ struct SessionStatusView: View {
             VStack(alignment: .leading, spacing: 5) {
                 Text(model.report.busy ? model.report.message : model.sessionState.title).font(.headline)
                 Text(detail).font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                    .textSelection(.enabled).accessibilityLabel(detail)
             }
             Spacer(minLength: 12)
             switch model.sessionState {
@@ -48,5 +47,6 @@ struct SessionStatusView: View {
         }
         .padding(16).groupedSurface()
         .accessibilityElement(children: .contain)
+        .accessibilityLabel(model.report.busy ? model.report.message : model.sessionState.title)
     }
 }

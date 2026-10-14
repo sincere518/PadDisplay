@@ -7,9 +7,9 @@ struct DeviceDetailView: View {
     var edit: (DeviceProfile) -> Void
 
     private var live: Bool {
-        model.report.active?.name == profile.name && !model.report.failed && !model.report.busy
+        model.report.active?.profileID == profile.id && !model.report.failed && !model.report.busy
     }
-    private var spec: DisplaySpec { live ? model.report.active!.spec : profile.spec }
+    private var spec: DisplaySpec { live ? model.report.active!.spec : profile.effectiveSpec }
     private var validSize: Bool { spec.validationError == nil }
     private var connected: Bool { model.controllers.contains(profile.name) }
     private var status: String {
@@ -35,7 +35,7 @@ struct DeviceDetailView: View {
                     metric("桌面尺寸", value: validSize ? "\(spec.width / (spec.hiDPI ? 2 : 1)) × \(spec.height / (spec.hiDPI ? 2 : 1))" : "确认尺寸后显示")
                     HStack(spacing: 12) {
                         Label(spec.hiDPI ? "HiDPI 已开启" : "标准像素", systemImage: "sparkles")
-                        if live { Label("当前主显示器", systemImage: "checkmark.circle") }
+                        if live { Label(model.report.active!.role.label, systemImage: "checkmark.circle") }
                     }.font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 0)
@@ -51,6 +51,23 @@ struct DeviceDetailView: View {
                     Spacer()
                 }.padding(14).groupedSurface()
             }
+            if profile.enabled {
+                HStack(spacing: 12) {
+                    Menu("显示预设：\(profile.density.label)") {
+                        ForEach(DesktopDensity.allCases, id: \.self) { density in
+                            Button(density.label + (density == profile.density ? " ✓" : "")) { model.setDensity(density, for: profile) }
+                        }
+                    }.accessibilityLabel("显示预设").accessibilityValue(profile.density.label)
+                    Menu("可视区域：\(profile.region.label)") {
+                        ForEach(DisplayRegion.allCases, id: \.self) { region in
+                            Button(region.label + (region == profile.region ? " ✓" : "")) { model.setRegion(region, for: profile) }
+                        }
+                    }.accessibilityLabel("可视区域").accessibilityValue(profile.region.label)
+                    Button("切换方向") { model.rotate(profile) }.appButton()
+                        .accessibilityLabel("切换屏幕方向")
+                        .help("交换保存的宽和高；仅当前自动或手动使用此设备时调整屏幕。")
+                }.controlSize(.small).disabled(model.report.busy)
+            }
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
                     Text("保存的配置").font(.headline)
@@ -62,13 +79,15 @@ struct DeviceDetailView: View {
                     Divider().padding(.horizontal, 16)
                     summary("屏幕方向", value: validSize ? (profile.spec.width >= profile.spec.height ? "横屏" : "竖屏") : "—")
                     Divider().padding(.horizontal, 16)
+                    summary("屏幕用途", value: profile.role.label)
+                    Divider().padding(.horizontal, 16)
                     HStack {
                         Text("连接时自动调整")
                         Spacer()
                         Toggle("连接时自动调整", isOn: Binding(get: { profile.enabled }, set: { enabled in
-                            var changed = profile
+                            guard var changed = model.profiles.first(where: { $0.id == profile.id }) else { return }
                             changed.enabled = enabled
-                            if enabled, changed.spec.validationError != nil { edit(changed) }
+                            if enabled, changed.validationError != nil { edit(changed) }
                             else { model.save(changed) }
                         })).labelsHidden().accessibilityLabel("连接时自动调整")
                             .toggleStyle(.switch).controlSize(.small).disabled(model.report.busy)
@@ -78,12 +97,16 @@ struct DeviceDetailView: View {
                     .font(.caption).foregroundStyle(.secondary)
             }
             HStack {
-                Label("配置已保存", systemImage: "checkmark.circle.fill").foregroundStyle(.secondary)
+                Button(profile.favorite ? "已收藏" : "收藏") {
+                    model.setFavorite(profile, !profile.favorite)
+                }.buttonStyle(.borderless).foregroundStyle(.secondary).disabled(model.report.busy)
+                    .accessibilityLabel(profile.favorite ? "取消设备收藏" : "收藏设备")
                 Spacer()
                 Button("立即应用") { model.useManually(profile) }.appButton()
                     .disabled(!profile.enabled || !validSize || model.report.busy || model.companionRunning)
                     .help("手动应用此配置，直到恢复、继续自动匹配或退出。")
             }.font(.callout)
+            if let warning = model.report.warning { Label(warning, systemImage: "exclamationmark.circle").font(.caption).foregroundStyle(.orange) }
         }
     }
 
@@ -125,7 +148,7 @@ private struct DevicePreview: View {
                     RoundedRectangle(cornerRadius: 10).fill(.black.opacity(scheme == .dark ? 0.6 : 0.9))
                     PreviewWallpaper().clipShape(RoundedRectangle(cornerRadius: 6)).padding(9)
                 }
-                .aspectRatio(CGFloat(spec.width) / CGFloat(spec.height), contentMode: .fit)
+                .aspectRatio(symbol == "ipad" ? CGFloat(max(spec.width, spec.height)) / CGFloat(min(spec.width, spec.height)) : CGFloat(spec.width) / CGFloat(spec.height), contentMode: .fit)
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(.secondary.opacity(0.5), lineWidth: 1))
                 .shadow(color: .black.opacity(0.12), radius: 8, y: 4)
             }

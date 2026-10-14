@@ -25,7 +25,11 @@ struct ContentView: View {
                                 }
                             }
                         }.padding(.vertical, 8).tag(profile.id).help(profile.name)
-                        .contextMenu { Button("编辑配置…") { editing = profile } }
+                        .contextMenu {
+                            Button("编辑配置…") { editing = profile }
+                            Button(profile.favorite ? "取消收藏" : "收藏到菜单栏") { model.setFavorite(profile, !profile.favorite) }
+                            Button("复制快捷指令链接") { model.copyShortcutURL(for: profile) }
+                        }
                     }
                 }
             }.listStyle(.sidebar)
@@ -37,6 +41,9 @@ struct ContentView: View {
                     }
                     Divider()
                     SettingsLink { Label("设置", systemImage: "gearshape").frame(maxWidth: .infinity, alignment: .leading) }
+                    Button { openWindow(id: "connection") } label: {
+                        Label("连接助手", systemImage: "checkmark.shield").frame(maxWidth: .infinity, alignment: .leading)
+                    }
                     Button { openWindow(id: "about") } label: {
                         Label("关于 PadDisplay", systemImage: "info.circle").frame(maxWidth: .infinity, alignment: .leading)
                     }
@@ -87,7 +94,7 @@ struct ContentView: View {
                     .disabled(model.report.busy)
             }
         }
-        .onAppear { selectActiveOrFirst() }
+        .onAppear { selectActiveOrFirst(); if model.needsSetup { openWindow(id: "connection") } }
         .onChange(of: model.report.active) { _, request in
             if editing == nil, let request, let profile = model.profiles.first(where: { $0.name == request.name }) {
                 selection = profile.id

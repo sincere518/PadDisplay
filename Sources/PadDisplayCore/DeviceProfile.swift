@@ -28,12 +28,54 @@ public struct DeviceProfile: Codable, Identifiable, Equatable {
     public var name: String
     public var enabled: Bool
     public var spec: DisplaySpec
+    public var density: DesktopDensity
+    public var region: DisplayRegion
+    public var role: DisplayRole
+    public var favorite: Bool
+
+    public var displaySerial: UInt32 {
+        // UUID 的确定性摘要；不使用每次进程启动都会变化的 Swift Hasher。
+        let hash = id.uuidString.utf8.reduce(UInt32(2166136261)) { ($0 ^ UInt32($1)) &* 16777619 }
+        return hash == 0 ? 1 : hash
+    }
+
+    public var effectiveSpec: DisplaySpec {
+        guard (0...8192).contains(spec.width), (0...8192).contains(spec.height) else { return spec }
+        let scale = density.scale
+        let width = Double(spec.width) * region.widthFraction * scale
+        let height = Double(spec.height) * scale
+        let step = spec.hiDPI ? 2.0 : 1.0
+        return DisplaySpec(width: Int((width / step).rounded()) * Int(step),
+                           height: Int((height / step).rounded()) * Int(step), hiDPI: spec.hiDPI)
+    }
+
+    public var validationError: String? {
+        spec.validationError ?? effectiveSpec.validationError
+    }
 
     public init(id: UUID = UUID(), name: String, enabled: Bool = true, spec: DisplaySpec) {
         self.id = id
         self.name = name
         self.enabled = enabled
         self.spec = spec
+        density = .standard
+        region = .full
+        role = .main
+        favorite = true
+    }
+
+    private enum CodingKeys: String, CodingKey { case id, name, enabled, spec, density, region, role, favorite }
+
+    public init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        id = try values.decode(UUID.self, forKey: .id)
+        name = try values.decode(String.self, forKey: .name)
+        enabled = try values.decode(Bool.self, forKey: .enabled)
+        spec = try values.decode(DisplaySpec.self, forKey: .spec)
+        density = try values.decodeIfPresent(DesktopDensity.self, forKey: .density) ?? .standard
+        region = try values.decodeIfPresent(DisplayRegion.self, forKey: .region) ?? .full
+        role = try values.decodeIfPresent(DisplayRole.self, forKey: .role) ?? .main
+        favorite = try values.decodeIfPresent(Bool.self, forKey: .favorite) ?? true
     }
 
     public func applyingSizeInput(width: String, height: String) -> DeviceProfile? {
@@ -49,6 +91,31 @@ public struct DeviceProfile: Codable, Identifiable, Equatable {
         let preset = ScreenPreset.suggested(for: name)
         return DeviceProfile(name: name, enabled: false, spec: preset?.spec ?? DisplaySpec(width: 0, height: 0))
     }
+}
+
+public enum DesktopDensity: String, Codable, CaseIterable {
+    case standard, largerText, moreSpace
+    public var label: String {
+        switch self { case .standard: "标准"; case .largerText: "更大文字"; case .moreSpace: "更多空间" }
+    }
+    public var scale: Double {
+        switch self { case .standard: 1; case .largerText: 0.8; case .moreSpace: 1.25 }
+    }
+}
+
+public enum DisplayRegion: String, Codable, CaseIterable {
+    case full, twoThirds, half
+    public var label: String {
+        switch self { case .full: "完整屏幕"; case .twoThirds: "约 ⅔ 宽度"; case .half: "约 ½ 宽度" }
+    }
+    public var widthFraction: Double {
+        switch self { case .full: 1; case .twoThirds: 2.0 / 3; case .half: 0.5 }
+    }
+}
+
+public enum DisplayRole: String, Codable, CaseIterable {
+    case main, extended
+    public var label: String { self == .main ? "主显示器" : "扩展显示器" }
 }
 
 public struct ScreenPreset: Identifiable {

@@ -25,7 +25,7 @@
 @property(readonly) CGDirectDisplayID displayID;
 @end
 
-void *PDDisplayCreate(const char *name, unsigned width, unsigned height) {
+void *PDDisplayCreate(const char *name, unsigned width, unsigned height, uint32_t serial) {
     @autoreleasepool {
         Class descriptorClass = NSClassFromString(@"CGVirtualDisplayDescriptor");
         Class displayClass = NSClassFromString(@"CGVirtualDisplay");
@@ -36,7 +36,7 @@ void *PDDisplayCreate(const char *name, unsigned width, unsigned height) {
         descriptor.maxPixelsHigh = height;
         descriptor.vendorID = 0x5044;
         descriptor.productID = 1;
-        descriptor.serialNum = arc4random_uniform(UINT32_MAX - 1) + 1;
+        descriptor.serialNum = serial;
         descriptor.sizeInMillimeters = CGSizeMake(width * 25.4 / 220, height * 25.4 / 220);
         descriptor.queue = dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0);
         PDVirtualDisplay *display = [[displayClass alloc] initWithDescriptor:descriptor];
