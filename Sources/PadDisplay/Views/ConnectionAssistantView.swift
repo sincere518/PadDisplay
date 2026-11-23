@@ -19,7 +19,7 @@ struct ConnectionAssistantView: View {
                     Divider()
                     step("3", "保存设备的屏幕配置", detail: "在主窗口选择设备，确认尺寸、方向与显示预设。", done: model.currentProfile?.enabled == true && model.currentProfile?.validationError == nil)
                     Divider()
-                    step("4", "确认远程屏幕已就绪", detail: "出现「屏幕已就绪」后，在 iPad／iPhone 的 UU显示器列表中选择该屏幕。", done: model.report.active != nil && !model.report.busy)
+                    step("4", "确认远程屏幕已就绪", detail: "出现「屏幕已就绪」后，在连接端的 UU远程显示器列表中选择「PadDisplay」屏幕。", done: model.report.active != nil && !model.report.busy)
                 }.padding(18).groupedSurface()
                 DiagnosticsView(model: model)
                 HStack {

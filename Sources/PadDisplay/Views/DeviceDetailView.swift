@@ -28,7 +28,7 @@ struct DeviceDetailView: View {
                     .font(.callout).foregroundStyle(.secondary)
             }
             HStack(spacing: 36) {
-                DevicePreview(spec: spec, symbol: profile.symbol)
+                DevicePreview(spec: spec, symbol: profile.symbol, notebookSpec: profile.screenPreset?.spec ?? profile.spec)
                     .frame(width: 260, height: 190).accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 18) {
                     metric(live ? "输出像素" : "保存的输出像素", value: validSize ? spec.label : "尚未设置")
@@ -135,6 +135,7 @@ struct DeviceDetailView: View {
 private struct DevicePreview: View {
     var spec: DisplaySpec
     var symbol: String
+    var notebookSpec: DisplaySpec
     @Environment(\.colorScheme) private var scheme
     private static let phoneFrame = Bundle.main.url(forResource: "iphone-frame", withExtension: "png")
         .flatMap(NSImage.init(contentsOf:))
@@ -143,6 +144,8 @@ private struct DevicePreview: View {
         if spec.validationError == nil {
             if symbol == "iphone", let frame = Self.phoneFrame {
                 PhonePreview(frame: frame)
+            } else if symbol == "laptopcomputer" {
+                NotebookPreview(spec: notebookSpec)
             } else {
                 ZStack {
                     RoundedRectangle(cornerRadius: 10).fill(.black.opacity(scheme == .dark ? 0.6 : 0.9))
@@ -155,6 +158,32 @@ private struct DevicePreview: View {
         } else {
             Image(systemName: symbol).font(.system(size: 76, weight: .ultraLight)).foregroundStyle(.secondary)
         }
+    }
+}
+
+private struct NotebookPreview: View {
+    var spec: DisplaySpec
+
+    var body: some View {
+        let ratio = CGFloat(max(spec.width, spec.height, 1)) / CGFloat(max(min(spec.width, spec.height), 1))
+        VStack(spacing: 0) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 9).fill(.black.opacity(0.9))
+                PreviewWallpaper().clipShape(RoundedRectangle(cornerRadius: 5)).padding(6)
+            }
+            .aspectRatio(ratio, contentMode: .fit)
+            .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(.secondary.opacity(0.45)))
+            .padding(.horizontal, 16)
+
+            UnevenRoundedRectangle(bottomLeadingRadius: 5, bottomTrailingRadius: 5)
+                .fill(.linearGradient(colors: [Color.secondary.opacity(0.4), Color.secondary.opacity(0.75)],
+                                      startPoint: .top, endPoint: .bottom))
+                .frame(height: 8)
+                .overlay(alignment: .top) {
+                    Capsule().fill(Color.primary.opacity(0.24)).frame(width: 36, height: 2)
+                }
+        }
+        .shadow(color: .black.opacity(0.12), radius: 8, y: 4)
     }
 }
 

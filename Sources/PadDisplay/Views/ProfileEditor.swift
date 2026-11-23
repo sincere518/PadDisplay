@@ -29,16 +29,17 @@ struct ProfileEditor: View {
         _width = State(initialValue: initialWidth)
         _height = State(initialValue: initialHeight)
         _portrait = State(initialValue: profile.spec.width < profile.spec.height)
-        _presetID = State(initialValue: ScreenPreset.all.first {
-            ($0.spec.width == profile.spec.width && $0.spec.height == profile.spec.height) ||
-            ($0.spec.width == profile.spec.height && $0.spec.height == profile.spec.width)
-        }?.id ?? "custom")
+        _presetID = State(initialValue: profile.screenPreset?.id ?? "custom")
     }
 
     private var candidate: DeviceProfile? {
         guard var value = profile.applyingSizeInput(width: width.trimmingCharacters(in: .whitespaces),
                                                     height: height.trimmingCharacters(in: .whitespaces)) else { return nil }
         value.name = value.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let id = value.presetID, let spec = ScreenPreset.all.first(where: { $0.id == id })?.spec,
+           (min(value.spec.width, value.spec.height), max(value.spec.width, value.spec.height)) != (spec.height, spec.width) {
+            value.presetID = nil
+        }
         return value
     }
 
@@ -70,12 +71,31 @@ struct ProfileEditor: View {
                     Section("屏幕") {
                         Picker("屏幕型号", selection: $presetID) {
                             Text("自定义 / 已保存尺寸").tag("custom")
-                            ForEach(ScreenPreset.all) { Text($0.label).tag($0.id) }
-                        }.onChange(of: presetID) { _, id in
-                            if let spec = ScreenPreset.all.first(where: { $0.id == id })?.spec {
-                                width = String(portrait ? spec.height : spec.width)
-                                height = String(portrait ? spec.width : spec.height)
+                            Section("iPhone 和 iPad") {
+                                ForEach(ScreenPreset.all.filter { !$0.label.hasPrefix("MacBook") }) { Text($0.label).tag($0.id) }
                             }
+                            Section("MacBook Air") {
+                                ForEach(ScreenPreset.macBooks.filter { $0.label.hasPrefix("MacBook Air ") }) { Text($0.label).tag($0.id) }
+                            }
+                            Section("MacBook Pro") {
+                                ForEach(ScreenPreset.macBooks.filter { $0.label.hasPrefix("MacBook Pro ") }) { Text($0.label).tag($0.id) }
+                            }
+                            Section("MacBook 与 MacBook Neo") {
+                                ForEach(ScreenPreset.macBooks.filter { !$0.label.hasPrefix("MacBook Air ") && !$0.label.hasPrefix("MacBook Pro ") }) {
+                                    Text($0.label).tag($0.id)
+                                }
+                            }
+                        }.onChange(of: presetID) { _, id in
+                            let preset = ScreenPreset.all.first { $0.id == id }
+                            profile.presetID = preset?.id
+                            guard let spec = preset?.spec else { return }
+                            width = String(portrait ? spec.height : spec.width)
+                            height = String(portrait ? spec.width : spec.height)
+                            profile.spec.hiDPI = spec.hiDPI
+                        }
+                        if ScreenPreset.isMacBookName(profile.name), presetID == "custom" {
+                            Text("请按实际屏幕尺寸、年份或芯片选择 MacBook 预设。")
+                                .font(.caption).foregroundStyle(.secondary)
                         }
                         Picker("屏幕方向", selection: $portrait) {
                             Text("横屏").tag(false)

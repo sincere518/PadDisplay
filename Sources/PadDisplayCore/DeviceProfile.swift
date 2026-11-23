@@ -28,6 +28,7 @@ public struct DeviceProfile: Codable, Identifiable, Equatable {
     public var name: String
     public var enabled: Bool
     public var spec: DisplaySpec
+    public var presetID: String?
     public var density: DesktopDensity
     public var region: DisplayRegion
     public var role: DisplayRole
@@ -53,18 +54,19 @@ public struct DeviceProfile: Codable, Identifiable, Equatable {
         spec.validationError ?? effectiveSpec.validationError
     }
 
-    public init(id: UUID = UUID(), name: String, enabled: Bool = true, spec: DisplaySpec) {
+    public init(id: UUID = UUID(), name: String, enabled: Bool = true, spec: DisplaySpec, presetID: String? = nil) {
         self.id = id
         self.name = name
         self.enabled = enabled
         self.spec = spec
+        self.presetID = presetID
         density = .standard
         region = .full
         role = .main
         favorite = true
     }
 
-    private enum CodingKeys: String, CodingKey { case id, name, enabled, spec, density, region, role, favorite }
+    private enum CodingKeys: String, CodingKey { case id, name, enabled, spec, presetID, density, region, role, favorite }
 
     public init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
@@ -72,6 +74,7 @@ public struct DeviceProfile: Codable, Identifiable, Equatable {
         name = try values.decode(String.self, forKey: .name)
         enabled = try values.decode(Bool.self, forKey: .enabled)
         spec = try values.decode(DisplaySpec.self, forKey: .spec)
+        presetID = try values.decodeIfPresent(String.self, forKey: .presetID)
         density = try values.decodeIfPresent(DesktopDensity.self, forKey: .density) ?? .standard
         region = try values.decodeIfPresent(DisplayRegion.self, forKey: .region) ?? .full
         role = try values.decodeIfPresent(DisplayRole.self, forKey: .role) ?? .main
@@ -89,7 +92,8 @@ public struct DeviceProfile: Codable, Identifiable, Equatable {
 
     public static func draft(for name: String) -> DeviceProfile {
         let preset = ScreenPreset.suggested(for: name)
-        return DeviceProfile(name: name, enabled: false, spec: preset?.spec ?? DisplaySpec(width: 0, height: 0))
+        return DeviceProfile(name: name, enabled: false, spec: preset?.spec ?? DisplaySpec(width: 0, height: 0),
+                             presetID: preset?.id)
     }
 }
 
@@ -129,7 +133,7 @@ public struct ScreenPreset: Identifiable {
         .init(id: "pro13", label: "iPad Pro 13 英寸（M4 / M5）", spec: .init(width: 2752, height: 2064)),
         .init(id: "iphone-air", label: "iPhone Air", spec: .init(width: 2736, height: 1260)),
         .init(id: "iphone17max", label: "iPhone 17 Pro Max", spec: .init(width: 2868, height: 1320)),
-    ]
+    ] + macBooks
 
     /// 只对包含明确型号、尺寸的名称预填；昵称和缺少尺寸的 iPad 保留待配置状态。
     public static func suggested(for name: String) -> ScreenPreset? {
@@ -147,6 +151,6 @@ public struct ScreenPreset: Identifiable {
         } else if n.range(of: #"^iphone 17 pro max(?:\s*\(.*\))?$"#, options: .regularExpression) != nil {
             id = "iphone17max"
         }
-        return all.first { $0.id == id }
+        return id.flatMap { id in all.first { $0.id == id } } ?? macBookSuggestion(for: name)
     }
 }

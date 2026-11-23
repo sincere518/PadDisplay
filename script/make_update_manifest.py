@@ -18,6 +18,6 @@ manifest = {
     "minimumSystemVersion": "14.0",
     "downloadURL": f"{base_url.rstrip('/')}/{filename}",
     "sha256": hashlib.sha256((directory / filename).read_bytes()).hexdigest(),
-    "notes": "修复设备切换或读取超时后再次连入时未重新发现机型的问题；实体显示器关闭时仍可使用远程主屏，并保留原桌面恢复记录；菜单打开时继续检查连接，恢复提示中显示已识别设备。",
+    "notes": "新增 MacBook Air、Pro、Neo 和经典 MacBook 的屏幕预设，按明确机型名或型号标识符自动匹配，机型不明确时可手动选择。",
 }
 (directory / "PadDisplay-update.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

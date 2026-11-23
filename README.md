@@ -2,7 +2,7 @@
 
 **让远程桌面，刚好适合你的屏幕。**
 
-![Version 0.3.1](https://img.shields.io/badge/version-0.3.1-007AFF)
+![Published version 0.4.0](https://img.shields.io/badge/release-0.4.0-007AFF)
 ![macOS 14 or later](https://img.shields.io/badge/macOS-14%2B-24292F?logo=apple)
 ![Apple Silicon](https://img.shields.io/badge/architecture-Apple_Silicon-555555)
 ![SwiftUI](https://img.shields.io/badge/UI-SwiftUI-F05138?logo=swift&logoColor=white)
@@ -10,7 +10,7 @@
 
 [功能特色](#功能特色) · [界面设计](#界面设计) · [安装与使用](#安装与使用) · [设备配置](#设备配置) · [常见问题](#常见问题) · [从源码构建](#从源码构建) · [参与贡献](#参与贡献)
 
-PadDisplay 是一款**开源免费的原生 macOS 远程桌面助手**，安装在被控 Mac 上，配合 UU远程使用。它读取当前连接设备的名称，为 iPad、iPhone 等设备匹配各自的屏幕配置，创建对应比例的高清虚拟屏幕；自动匹配的连接断开后，移除虚拟屏幕并恢复原显示器布局。
+PadDisplay 是一款**开源免费的原生 macOS 远程桌面助手**，安装在被控 Mac 上，配合 UU远程使用。它读取当前连接设备的名称，为 iPad、iPhone 和 MacBook 匹配屏幕配置，创建对应比例的虚拟屏幕。自动匹配的连接断开后，应用移除虚拟屏幕并恢复原显示器布局。
 
 如果你用 iPad 远程连接 Mac，却因为两端屏幕比例不同而遇到黑边、文字过小或桌面尺寸不合适，PadDisplay 可以让远程桌面按你的设备尺寸显示。更换设备时，也可以自动使用另一套保存的配置。
 
@@ -29,7 +29,7 @@ PadDisplay 是一款**开源免费的原生 macOS 远程桌面助手**，安装�
 | 按设备自动匹配 | 根据 UU远程显示的设备名称，应用保存的尺寸、方向和 HiDPI 设置 |
 | 高清虚拟屏幕 | 创建 `PadDisplay · 设备名` 屏幕，可选主显示器或扩展显示器 |
 | 固定屏幕身份 | 同一设备配置复用固定序列号，重连、修改尺寸和方向保持身份 |
-| 独立设备配置 | 分别保存 iPad、iPhone 和自定义设备的配置，切换连接时重新匹配 |
+| 独立设备配置 | 分别保存 iPad、iPhone、MacBook 和自定义设备的配置，切换连接时重新匹配 |
 | 清晰的文字与界面 | 支持 HiDPI，以两倍输出像素呈现逻辑桌面 |
 | 断开后恢复桌面 | 保存并核对原显示模式、逻辑缩放、刷新率、主屏和布局；可还原普通窗口位置 |
 | 显示与区域预设 | 标准、更大文字、更多空间，以及完整屏幕、约 ⅔／½ 宽度 |
@@ -89,14 +89,14 @@ iPhone 的机身示意固定竖直，灵动岛位于顶部。实际远程桌面�
 
 ### 1. 获取应用
 
-当前版本为 **[0.3.1](https://github.com/sincere518/PadDisplay/releases/tag/v0.3.1)**。下载 [DMG 安装包](https://github.com/sincere518/PadDisplay/releases/download/v0.3.1/PadDisplay-0.3.1-arm64.dmg)，或使用 [ZIP 安装包](https://github.com/sincere518/PadDisplay/releases/download/v0.3.1/PadDisplay-0.3.1-arm64.zip)。获取本仓库源码后，也可按[从源码构建](#从源码构建)生成应用。
+当前版本为 **[0.4.0](https://github.com/sincere518/PadDisplay/releases/tag/v0.4.0)**。下载 [DMG 安装包](https://github.com/sincere518/PadDisplay/releases/download/v0.4.0/PadDisplay-0.4.0-arm64.dmg)，或使用 [ZIP 安装包](https://github.com/sincere518/PadDisplay/releases/download/v0.4.0/PadDisplay-0.4.0-arm64.zip)。也可按[从源码构建](#从源码构建)生成安装包。
 
 正式打包产物为：
 
 ```text
 dist/PadDisplay.app
-dist/PadDisplay-0.3.1-arm64.dmg
-dist/PadDisplay-0.3.1-arm64.zip
+dist/PadDisplay-0.4.0-arm64.dmg
+dist/PadDisplay-0.4.0-arm64.zip
 dist/PadDisplay-update.json
 dist/SHA256SUMS.txt
 ```
@@ -114,8 +114,8 @@ dist/SHA256SUMS.txt
 
 ### 3. 连接设备
 
-1. 用 iPad 或 iPhone 的 UU远程连接这台 Mac。
-2. PadDisplay 匹配该设备的配置。明确型号的新设备会自动预填，其他设备可通过「添加设备」配置。
+1. 用 iPad、iPhone 或 MacBook 的 UU远程连接这台 Mac。
+2. PadDisplay 优先使用该设备已保存的配置。首次连入且名称能唯一匹配屏幕时，自动创建配置。使用昵称或名称不完整时，可通过「添加设备」选择屏幕型号。
 3. 等待界面显示「屏幕已就绪」，检查输出像素与桌面尺寸。
 4. 在连接端的 UU远程显示器列表中选择 **`PadDisplay · 设备名`**。
 
@@ -144,6 +144,31 @@ dist/SHA256SUMS.txt
 | iPhone 17 Pro Max | 2868 × 1320 | 1434 × 660 |
 
 预设定义见 [DeviceProfile.swift](Sources/PadDisplayCore/DeviceProfile.swift)。其他设备可以保存自定义尺寸，实际显示效果需在对应设备上确认。
+
+### MacBook 屏幕
+
+MacBook 预设使用内置面板的原生像素。Retina、Liquid Retina 和 PROLED 默认使用 2× HiDPI，非 Retina 预设默认使用 1×。同尺寸、同分辨率的代际共用一个预设。
+
+| MacBook 机型 | 默认输出像素 |
+| --- | --- |
+| Neo 13 英寸 | 2408 × 1506 |
+| Air 13 英寸，M2 至 M5 | 2560 × 1664 |
+| Air 15 英寸，M2 至 M5 | 2880 × 1864 |
+| Air 13 英寸 Retina，2018 至 M1 | 2560 × 1600 |
+| Air 13 英寸，2008–2009／2010–2017 | 1280 × 800／1440 × 900 |
+| Air 11 英寸 | 1366 × 768 |
+| Pro 14 英寸 Liquid Retina XDR，含 M6 | 3024 × 1964 |
+| Pro 16 英寸 Liquid Retina XDR | 3456 × 2234 |
+| Pro 14／16 英寸 PROLED XDR | 3024 × 1986／3472 × 2266 |
+| Pro 13 英寸 Retina／非 Retina | 2560 × 1600／1280 × 800 |
+| Pro 15 英寸 Retina／非 Retina 标准屏／非 Retina 高分辨率屏 | 2880 × 1800／1440 × 900／1680 × 1050 |
+| Pro 16 英寸 Intel | 3072 × 1920 |
+| Pro 17 英寸标准屏／高分辨率屏 | 1680 × 1050／1920 × 1200 |
+| MacBook 12 英寸 Retina／经典 13 英寸 | 2304 × 1440／1280 × 800 |
+
+自动匹配读取的是 UU远程显示的设备名。名称为 `MacBook Air (13 英寸, M4)` 或已收录的型号标识符（如 `Mac17,13`）时，可以自动匹配。名称是昵称时，在「添加设备」中填写 UU 显示的完整昵称，再选内置预设。只有 `MacBook Air 13 英寸`，或只有 `MacBook Pro 14 英寸 M5 Pro` 时，需手动确认屏幕版本。窗口、工具栏和系统缩放占用的可视区域可通过「可视区域」或自定义像素调整。
+
+规格来源见 [Apple MacBook Air 技术规格](https://www.apple.com/macbook-air/specs/)、[Apple MacBook Pro 机型识别](https://support.apple.com/en-us/108052)、[Apple PROLED XDR 技术规格](https://www.apple.com/macbook-pro/proled-xdr-display/specs/)、[Apple MacBook Pro M6 技术规格](https://support.apple.com/en-us/148300)及 [Apple MacBook Neo 技术规格](https://www.apple.com/macbook-neo/specs/)。旧款可从 [Apple MacBook Air 机型识别](https://support.apple.com/en-us/102869)及 MacBook Pro 机型识别查找各自技术规格。
 
 ### 添加和编辑
 
@@ -199,7 +224,7 @@ dist/SHA256SUMS.txt
 
 更新包需通过 SHA-256、Bundle ID、版本、系统要求、架构与当前签名身份校验。安装前会恢复原桌面，随后替换应用并重新打开；目录不可写、签名身份不同或桌面尚未恢复时停止安装，并给出手动处理入口。
 
-维护者运行 `--package` 后，将 DMG、ZIP、`PadDisplay-update.json` 和 `SHA256SUMS.txt` 一并上传到 **`v0.3.1`** 的 GitHub Release。更新描述文件引用该标签下的 ZIP，内含实际 SHA-256；若使用其他标签或附件目录，打包时通过 `RELEASE_BASE_URL` 指定真实 HTTPS 目录。检查地址为：
+维护者运行 `--package` 后，将 DMG、ZIP、`PadDisplay-update.json` 和 `SHA256SUMS.txt` 一并上传到对应版本的 GitHub Release。更新描述文件引用该标签下的 ZIP，内含实际 SHA-256。若使用其他标签或附件目录，打包时通过 `RELEASE_BASE_URL` 指定真实 HTTPS 目录。检查地址为：
 
 ```text
 https://github.com/sincere518/PadDisplay/releases/latest/download/PadDisplay-update.json
@@ -314,6 +339,7 @@ PadDisplay 通过 macOS 辅助功能读取 UU界面里的连接设备名称和�
 
 | 版本 | 主要变化 |
 | --- | --- |
+| 0.4.0 | 增加 21 项 MacBook 屏幕预设、机型匹配和笔记本预览 |
 | 0.3.1 | 修复重连发现缓存与菜单轮询；实体屏关闭时可继续使用远程主屏，保留恢复记录 |
 | 0.3.0 | 固定屏幕身份、显示模式与窗口恢复、显示／区域预设、主屏／扩展策略、收藏快捷操作、引导诊断、配置备份、DMG 与更新 |
 | 0.2.3 | 整理正式交付目录，精简应用入口，保留正式应用及安装包 |
@@ -332,6 +358,8 @@ PadDisplay 通过 macOS 辅助功能读取 UU界面里的连接设备名称和�
 0.3.1 完成 **24 项针对性临时校验**，覆盖设备切换与读取超时后的重新发现、菜单跟踪模式下的轮询、实体屏关闭及部分显示器离线时继续使用主屏、恢复记录保留、扩展模式在线要求和启动时的请求衔接。在线显示器模式不支持、身份不明确和恢复未完成时，校验仍阻止错误地清除恢复记录。
 
 0.3.1 已在实体显示器关闭的 Mac Studio 上验证自动识别 **iPad Air 13 英寸（M2）**，启用 **2732 × 2048 像素 / 1366 × 1024 逻辑桌面**的虚拟主屏；原实体桌面恢复记录与升级前完全一致。实体显示器重新开机后的完整恢复，以及此版本的手机切换，尚未重新进行实机验收。
+
+0.4.0 完成 108 项隔离校验，覆盖 MacBook 预设、设备名和型号标识符匹配、同名面板歧义、连接策略及新旧配置文件读取。已在 macOS 27.2.1 的隔离应用中核对预设选择、HiDPI 默认值、笔记本预览和昵称配置保存。实际 MacBook 通过 UU远程连入后的显示效果尚待实机验证。
 
 私有 `CGVirtualDisplay` 接口及 UU界面结构可能随系统或远程软件升级变化。
 

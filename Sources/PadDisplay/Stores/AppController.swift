@@ -232,7 +232,7 @@ final class AppController {
         for name in controllers where !discovered.contains(name) {
             discovered.insert(name)
             if profiles.count < 100, !profiles.contains(where: { $0.name == name }), let preset = ScreenPreset.suggested(for: name) {
-                profiles.append(DeviceProfile(name: name, spec: preset.spec))
+                profiles.append(DeviceProfile(name: name, spec: preset.spec, presetID: preset.id))
                 persist()
             }
         }

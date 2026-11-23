@@ -24,17 +24,30 @@ extension DeviceProfile {
     }
 
     var symbol: String {
+        if ScreenPreset.isMacBookName(name) || ScreenPreset.macBooks.contains(where: { $0.id == presetID }) {
+            return "laptopcomputer"
+        }
         if name.lowercased().contains("iphone") { return "iphone" }
         if name.lowercased().contains("ipad") { return "ipad" }
         return "display"
     }
 
-    var presetLabel: String {
-        ScreenPreset.all.first {
-            ($0.spec.width == spec.width && $0.spec.height == spec.height) ||
-            ($0.spec.width == spec.height && $0.spec.height == spec.width)
-        }?.label ?? "自定义尺寸"
+    var screenPreset: ScreenPreset? {
+        if let presetID, let selected = ScreenPreset.all.first(where: { $0.id == presetID }) {
+            return selected
+        }
+        func matchesSize(_ preset: ScreenPreset) -> Bool {
+            (preset.spec.width == spec.width && preset.spec.height == spec.height) ||
+            (preset.spec.width == spec.height && preset.spec.height == spec.width)
+        }
+        if let suggested = ScreenPreset.suggested(for: name), matchesSize(suggested) { return suggested }
+        // 旧版手机和平板配置没有保存预设 ID，沿用按尺寸显示型号的行为。
+        return ScreenPreset.all.first { preset in
+            matchesSize(preset) && !ScreenPreset.macBooks.contains { $0.id == preset.id }
+        }
     }
+
+    var presetLabel: String { screenPreset?.label ?? "自定义尺寸" }
 }
 
 extension SessionState {
