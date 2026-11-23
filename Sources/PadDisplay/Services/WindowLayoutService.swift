@@ -24,12 +24,13 @@ final class WindowLayoutService {
         for app in NSWorkspace.shared.runningApplications where app.activationPolicy == .regular {
             guard Date() < deadline, live.count < 200 else { break }
             guard let bundleID = app.bundleIdentifier else { continue }
-            for window in windows(app.processIdentifier) {
+            for window in windows(app.processIdentifier, before: deadline) {
                 guard Date() < deadline, live.count < 200 else { break }
-                guard normal(window), let origin = point(window), let size = size(window) else { continue }
+                guard normal(window, before: deadline), let origin = point(window, before: deadline),
+                      let size = size(window, before: deadline) else { continue }
                 live.append((SavedWindow(pid: app.processIdentifier, bundleID: bundleID,
-                                         identifier: value(window, kAXIdentifierAttribute) as? String,
-                                         titleDigest: digest(window), x: origin.x, y: origin.y,
+                                         identifier: value(window, kAXIdentifierAttribute, before: deadline) as? String,
+                                         titleDigest: digest(window, before: deadline), x: origin.x, y: origin.y,
                                          width: size.width, height: size.height), window))
             }
         }
@@ -37,6 +38,7 @@ final class WindowLayoutService {
     }
 
     func restore(_ saved: [SavedWindow]) -> Int {
+        defer { live = [] }
         guard AXIsProcessTrusted() else { return saved.count }
         var skipped = 0
         let deadline = Date().addingTimeInterval(4)
@@ -47,62 +49,83 @@ final class WindowLayoutService {
             if live.indices.contains(index), live[index].0 == record {
                 window = live[index].1
             } else {
-                let matches = windows(record.pid).filter { candidate in
-                    if let identifier = record.identifier, !identifier.isEmpty {
-                        return value(candidate, kAXIdentifierAttribute) as? String == identifier
-                    }
-                    return !record.titleDigest.isEmpty && digest(candidate) == record.titleDigest
-                }
-                window = matches.count == 1 ? matches.first : nil
+                window = uniqueWindow(for: record, before: deadline)
             }
-            guard let window, normal(window), (1...32768).contains(record.width), (1...32768).contains(record.height),
+            guard let window, normal(window, before: deadline), (1...32768).contains(record.width), (1...32768).contains(record.height),
                   (-1_000_000...1_000_000).contains(record.x), (-1_000_000...1_000_000).contains(record.y) else { skipped += 1; continue }
-            if let origin = point(window), let size = size(window),
+            if let origin = point(window, before: deadline), let size = size(window, before: deadline),
                abs(origin.x - record.x) < 2, abs(origin.y - record.y) < 2,
                abs(size.width - record.width) < 2, abs(size.height - record.height) < 2 { continue }
             var position = CGPoint(x: record.x, y: record.y), size = CGSize(width: record.width, height: record.height)
             guard let p = AXValueCreate(.cgPoint, &position), let s = AXValueCreate(.cgSize, &size) else { skipped += 1; continue }
-            let sizeError = AXUIElementSetAttributeValue(window, kAXSizeAttribute as CFString, s)
-            let positionError = AXUIElementSetAttributeValue(window, kAXPositionAttribute as CFString, p)
-            guard sizeError == .success, positionError == .success, let origin = point(window), let restoredSize = self.size(window),
+            let sized = setValue(window, kAXSizeAttribute, s, before: deadline)
+            let positioned = setValue(window, kAXPositionAttribute, p, before: deadline)
+            guard sized, positioned, let origin = point(window, before: deadline),
+                  let restoredSize = self.size(window, before: deadline),
                   abs(origin.x - record.x) < 2, abs(origin.y - record.y) < 2,
                   abs(restoredSize.width - record.width) < 2, abs(restoredSize.height - record.height) < 2 else {
                 skipped += 1; continue
             }
         }
-        live = []
         return skipped
     }
 
-    private func windows(_ pid: pid_t) -> [AXUIElement] {
-        let app = AXUIElementCreateApplication(pid)
-        AXUIElementSetMessagingTimeout(app, 0.1)
-        return value(app, kAXWindowsAttribute) as? [AXUIElement] ?? []
+    private func uniqueWindow(for record: SavedWindow, before deadline: Date) -> AXUIElement? {
+        var match: AXUIElement?
+        for candidate in windows(record.pid, before: deadline) {
+            guard Date() < deadline else { return nil }
+            let matches: Bool
+            if let identifier = record.identifier, !identifier.isEmpty {
+                matches = value(candidate, kAXIdentifierAttribute, before: deadline) as? String == identifier
+            } else {
+                matches = !record.titleDigest.isEmpty && digest(candidate, before: deadline) == record.titleDigest
+            }
+            if matches {
+                guard match == nil else { return nil }
+                match = candidate
+            }
+        }
+        return Date() < deadline ? match : nil
     }
 
-    private func value(_ element: AXUIElement, _ key: String) -> CFTypeRef? {
+    private func windows(_ pid: pid_t, before deadline: Date) -> [AXUIElement] {
+        value(AXUIElementCreateApplication(pid), kAXWindowsAttribute, before: deadline) as? [AXUIElement] ?? []
+    }
+
+    private func setTimeout(_ element: AXUIElement, before deadline: Date) -> Bool {
+        let remaining = deadline.timeIntervalSinceNow
+        return remaining > 0 && AXUIElementSetMessagingTimeout(element, Float(min(0.1, remaining))) == .success
+    }
+
+    private func value(_ element: AXUIElement, _ key: String, before deadline: Date) -> CFTypeRef? {
+        guard setTimeout(element, before: deadline) else { return nil }
         var result: CFTypeRef?
         return AXUIElementCopyAttributeValue(element, key as CFString, &result) == .success ? result : nil
     }
 
-    private func normal(_ window: AXUIElement) -> Bool {
-        value(window, kAXSubroleAttribute) as? String == kAXStandardWindowSubrole &&
-        value(window, kAXMinimizedAttribute) as? Bool != true && value(window, "AXFullScreen") as? Bool != true
+    private func setValue(_ element: AXUIElement, _ key: String, _ value: CFTypeRef, before deadline: Date) -> Bool {
+        setTimeout(element, before: deadline) && AXUIElementSetAttributeValue(element, key as CFString, value) == .success
     }
 
-    private func digest(_ window: AXUIElement) -> String {
-        guard let title = value(window, kAXTitleAttribute) as? String, !title.isEmpty else { return "" }
+    private func normal(_ window: AXUIElement, before deadline: Date) -> Bool {
+        value(window, kAXSubroleAttribute, before: deadline) as? String == kAXStandardWindowSubrole &&
+        value(window, kAXMinimizedAttribute, before: deadline) as? Bool != true &&
+        value(window, "AXFullScreen", before: deadline) as? Bool != true
+    }
+
+    private func digest(_ window: AXUIElement, before deadline: Date) -> String {
+        guard let title = value(window, kAXTitleAttribute, before: deadline) as? String, !title.isEmpty else { return "" }
         return SHA256.hash(data: Data(title.utf8)).map { String(format: "%02x", $0) }.joined()
     }
 
-    private func point(_ window: AXUIElement) -> CGPoint? {
-        guard let value = value(window, kAXPositionAttribute), CFGetTypeID(value) == AXValueGetTypeID() else { return nil }
+    private func point(_ window: AXUIElement, before deadline: Date) -> CGPoint? {
+        guard let value = value(window, kAXPositionAttribute, before: deadline), CFGetTypeID(value) == AXValueGetTypeID() else { return nil }
         var result = CGPoint.zero
         return AXValueGetValue(value as! AXValue, .cgPoint, &result) ? result : nil
     }
 
-    private func size(_ window: AXUIElement) -> CGSize? {
-        guard let value = value(window, kAXSizeAttribute), CFGetTypeID(value) == AXValueGetTypeID() else { return nil }
+    private func size(_ window: AXUIElement, before deadline: Date) -> CGSize? {
+        guard let value = value(window, kAXSizeAttribute, before: deadline), CFGetTypeID(value) == AXValueGetTypeID() else { return nil }
         var result = CGSize.zero
         return AXValueGetValue(value as! AXValue, .cgSize, &result) ? result : nil
     }

@@ -11,7 +11,7 @@ struct MenuContent: View {
             Text("\(active.name.prefix(15)) · \(active.spec.label)").font(.caption)
         }
         Divider()
-        Toggle("自动匹配设备", isOn: $model.automatic)
+        Toggle("自动匹配设备", isOn: $model.automatic).disabled(model.shuttingDown)
         Button("恢复原桌面") { model.restore() }.disabled(model.report.busy)
         if model.sessionPaused { Button("继续自动匹配") { model.resumeAutomatic() } }
         if !model.favorites.isEmpty {

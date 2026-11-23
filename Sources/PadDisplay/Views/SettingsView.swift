@@ -9,7 +9,7 @@ struct SettingsView: View {
           Form {
             Section("通用") {
                 Toggle("登录 Mac 时启动", isOn: Binding(get: { model.loginEnabled }, set: { model.setLogin($0) }))
-                Toggle("自动匹配设备", isOn: $model.automatic)
+                Toggle("自动匹配设备", isOn: $model.automatic).disabled(model.shuttingDown)
                 Toggle("恢复原桌面时还原窗口位置", isOn: $model.restoreWindowPositions)
                 Text("还原仍存在的普通窗口。全屏、最小化或受保护窗口可能由应用自行管理。")
                     .font(.caption).foregroundStyle(.secondary)

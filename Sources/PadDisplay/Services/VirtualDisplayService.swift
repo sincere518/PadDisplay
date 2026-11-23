@@ -33,12 +33,15 @@ final class VirtualDisplayService {
     private let journal = VirtualDisplayService.supportDirectory.appendingPathComponent("display-session.json")
     private var desired: DisplayRequest?
     private var current: DisplayRequest?
+    private var requestRevision = 0
     private var busy = false
     private var blocked = false
     private var needsRecovery = false
-    private var quitCompletion: (() -> Void)?
+    private var shuttingDown = false
+    private var quitCompletions: [() -> Void] = []
     // 以下数据只在 queue 上访问。
     private var handle: UnsafeMutableRawPointer?
+    private var pendingRemoval: CGDirectDisplayID?
     private var born = Date.distantPast
     private var snapshot: DesktopSnapshot?
     private let windows = WindowLayoutService()
@@ -69,33 +72,52 @@ final class VirtualDisplayService {
     }
 
     func request(_ value: DisplayRequest?, retry: Bool = false) {
-        let changed = desired != value
+        guard !shuttingDown else { return }
+        enqueue(value, retry: retry)
+    }
+
+    private func enqueue(_ value: DisplayRequest?, retry: Bool) {
+        if retry || desired != value {
+            requestRevision &+= 1
+            blocked = false
+        }
         desired = value
-        if retry || changed { blocked = false }
         reconcile()
     }
 
     func shutdown(_ completion: @escaping () -> Void) {
-        quitCompletion = completion
-        request(nil, retry: true)
+        if shuttingDown {
+            if quitCompletions.isEmpty { completion() }
+            else { quitCompletions.append(completion) }
+            return
+        }
+        shuttingDown = true
+        quitCompletions.append(completion)
+        enqueue(nil, retry: true)
     }
 
     func recover() {
+        guard !busy else { return }
+        shuttingDown = false
         busy = true
+        let previous = current
+        let revision = requestRevision
         queue.async {
-            var error: Error?
+            var result = DisplayReport(message: "准备就绪")
             do {
-                if FileManager.default.fileExists(atPath: self.journal.path) {
-                    self.snapshot = try DesktopSnapshot.read(Data(contentsOf: self.journal))
-                    _ = try self.restoreDesktop(final: true)
-                }
-            } catch let failure { error = failure }
+                if self.hasDesktopChanges { result.warning = try self.remove(final: true) }
+            } catch {
+                result.active = self.handle == nil ? nil : previous
+                result.message = error.localizedDescription
+                result.failed = true
+                result.recoveryNeeded = self.hasDesktopChanges
+            }
             DispatchQueue.main.async {
                 self.busy = false
-                self.blocked = error != nil && self.desired == nil
-                self.needsRecovery = error != nil
-                self.onChange?(.init(message: error?.localizedDescription ?? "准备就绪", failed: error != nil,
-                                    recoveryNeeded: error != nil))
+                self.current = result.active
+                self.blocked = result.failed && revision == self.requestRevision && self.desired == nil
+                self.needsRecovery = result.recoveryNeeded
+                self.onChange?(result)
                 self.reconcile()
             }
         }
@@ -103,45 +125,62 @@ final class VirtualDisplayService {
 
     private func reconcile() {
         guard !busy else { return }
-        if desired == current && !(desired == nil && needsRecovery) {
-            if desired == nil, let done = quitCompletion { quitCompletion = nil; done() }
+        if desired == current && !needsRecovery {
+            if desired == nil, !quitCompletions.isEmpty {
+                onChange?(.init(message: "已恢复原桌面"))
+                finishShutdown()
+            }
             return
         }
         guard !blocked else { return }
         let target = desired
         let previous = current
+        let revision = requestRevision
         busy = true
         onChange?(.init(active: current, busy: true, message: target == nil ? "正在恢复原桌面…" : "正在准备远程屏幕…"))
         queue.async {
             var result = DisplayReport()
+            var startingTarget = false
             do {
-                if self.handle != nil || self.snapshot != nil || FileManager.default.fileExists(atPath: self.journal.path) {
-                    result.warning = try self.remove(final: target == nil)
-                }
+                if self.hasDesktopChanges { result.warning = try self.remove(final: target == nil) }
                 if let target {
+                    startingTarget = true
                     try self.create(target)
                     result.active = target
                     result.message = "远程屏幕已就绪：\(target.spec.label)"
                 } else { result.message = "已恢复原桌面" }
             } catch {
-                // 配置事务无响应时不继续变更拓扑；其他失败尝试正常收尾。
-                if !self.configurationStalled { _ = try? self.remove(final: true) }
-                result.active = self.handle == nil ? nil : target ?? previous
+                // 创建失败后收尾。若移除本身失败，保留恢复记录并等待重试。
+                if startingTarget, !self.configurationStalled { _ = try? self.remove(final: true) }
+                result.active = self.handle == nil ? nil : startingTarget ? target : previous
                 result.message = error.localizedDescription
                 result.failed = true
+                result.recoveryNeeded = self.hasDesktopChanges
             }
-            let pendingRecovery = self.handle != nil || self.snapshot != nil || FileManager.default.fileExists(atPath: self.journal.path)
-            result.recoveryNeeded = result.failed && pendingRecovery
             DispatchQueue.main.async {
                 self.busy = false
                 self.current = result.active
-                self.blocked = result.failed
-                self.needsRecovery = result.failed && pendingRecovery
+                let stillRequested = revision == self.requestRevision
+                self.blocked = result.failed && stillRequested
+                self.needsRecovery = result.recoveryNeeded
                 self.onChange?(result)
-                if result.failed, let done = self.quitCompletion { self.quitCompletion = nil; done() }
-                if !result.failed { self.reconcile() }
+                if target == nil, stillRequested, self.shuttingDown {
+                    self.finishShutdown()
+                } else {
+                    self.reconcile()
+                }
             }
         }
+    }
+
+    private var hasDesktopChanges: Bool {
+        handle != nil || pendingRemoval != nil || snapshot != nil || FileManager.default.fileExists(atPath: journal.path)
+    }
+
+    private func finishShutdown() {
+        let completions = quitCompletions
+        quitCompletions.removeAll()
+        completions.forEach { $0() }
     }
 
     private func create(_ request: DisplayRequest) throws {
@@ -184,7 +223,7 @@ final class VirtualDisplayService {
             try configure { config in
                 let modeError = CGConfigureDisplayWithDisplayMode(config, id, mode, nil)
                 if modeError != .success { return modeError }
-                for display in online {
+                for display in online where display == id || CGDisplayMirrorsDisplay(display) == 0 {
                     let p = CGDisplayBounds(display).origin
                     let error = CGConfigureDisplayOrigin(config, display, Int32(p.x - origin.x), Int32(p.y - origin.y))
                     if error != .success { return error }
@@ -217,11 +256,14 @@ final class VirtualDisplayService {
         }
         if let handle {
             Thread.sleep(forTimeInterval: max(0, 3 - Date().timeIntervalSince(born)))
-            let id = PDDisplayID(handle)
+            pendingRemoval = PDDisplayID(handle)
             PDDisplayRelease(handle)
             self.handle = nil
             Thread.sleep(forTimeInterval: 1.5)
+        }
+        if let id = pendingRemoval {
             guard try !Self.readOnlineDisplays().contains(id) else { throw failure("虚拟屏幕尚未移除，请稍后重试恢复。") }
+            pendingRemoval = nil
         }
         return try restoreDesktop(final: final)
     }
@@ -230,14 +272,20 @@ final class VirtualDisplayService {
         guard let snapshot else { return nil }
         let online = try Self.readOnlineDisplays()
         var claimed = Set<CGDirectDisplayID>()
-        let targets = snapshot.displays.compactMap { record -> (SavedDisplay, CGDirectDisplayID)? in
+        let resolvedTargets = snapshot.displays.compactMap { record -> (SavedDisplay, CGDirectDisplayID)? in
             let identityCount = snapshot.displays.filter { $0.vendor == record.vendor && $0.model == record.model && $0.serial == record.serial }.count
             guard let id = record.resolve(in: online, allowFallback: identityCount == 1), claimed.insert(id).inserted else { return nil }
             return (record, id)
         }
+        // 镜像从屏必须等原主屏上线；局部恢复不调整缺少原主屏的从屏。
+        let resolved = Dictionary(uniqueKeysWithValues: resolvedTargets.map { ($0.0.id, $0.1) })
+        let targets = resolvedTargets.filter { record, _ in
+            guard let mirror = record.mirrorOf, mirror != 0 else { return true }
+            return resolved[mirror] != nil
+        }
         var modes: [CGDirectDisplayID: CGDisplayMode] = [:]
         for (record, id) in targets {
-            if let saved = record.mode {
+            if let saved = record.mode, !(CGDisplayCopyDisplayMode(id).map(saved.matches) ?? false) {
                 let all = CGDisplayCopyAllDisplayModes(id, [kCGDisplayShowDuplicateLowResolutionModes: true] as CFDictionary) as? [CGDisplayMode] ?? []
                 guard let mode = all.first(where: { saved.matches($0) && $0.ioDisplayModeID == saved.modeID }) ??
                     all.first(where: saved.matches) else {
@@ -247,23 +295,35 @@ final class VirtualDisplayService {
             }
         }
         if !targets.isEmpty {
-            let resolved = Dictionary(uniqueKeysWithValues: targets.map { ($0.0.id, $0.1) })
+            let currentMirrors = Dictionary(uniqueKeysWithValues: targets.map { ($0.1, CGDisplayMirrorsDisplay($0.1)) })
+            let expectedMirrors = Dictionary(uniqueKeysWithValues: targets.compactMap { record, id -> (CGDirectDisplayID, CGDirectDisplayID)? in
+                guard let mirror = record.mirrorOf, let expected = mirror == 0 ? 0 : resolved[mirror] else { return nil }
+                return (id, expected)
+            })
             try configure { config in
+                var detached = Set<CGDirectDisplayID>()
+                for (_, id) in targets {
+                    guard let current = currentMirrors[id], current != 0, let expected = expectedMirrors[id],
+                          current != expected || modes[id] != nil || modes[current] != nil else { continue }
+                    let error = CGConfigureDisplayMirrorOfDisplay(config, id, 0)
+                    if error != .success { return error }
+                    detached.insert(id)
+                }
                 for (record, id) in targets {
-                    if let mirror = record.mirrorOf {
-                        let target = mirror == 0 ? 0 : resolved[mirror]
-                        guard let target else { return .illegalArgument }
-                        if CGDisplayMirrorsDisplay(id) != target {
-                            let error = CGConfigureDisplayMirrorOfDisplay(config, id, target)
-                            if error != .success { return error }
-                        }
-                    }
-                    if let mode = modes[id], let saved = record.mode,
-                       !(CGDisplayCopyDisplayMode(id).map(saved.matches) ?? false) {
+                    if let mode = modes[id] {
                         let error = CGConfigureDisplayWithDisplayMode(config, id, mode, nil)
                         if error != .success { return error }
                     }
-                    let error = CGConfigureDisplayOrigin(config, id, record.x, record.y)
+                    // 设置从屏原点会解除镜像，布局只设置主屏和各独立显示器。
+                    if (expectedMirrors[id] ?? currentMirrors[id]) == 0 {
+                        let error = CGConfigureDisplayOrigin(config, id, record.x, record.y)
+                        if error != .success { return error }
+                    }
+                }
+                for (_, id) in targets {
+                    guard let expected = expectedMirrors[id], expected != 0,
+                          detached.contains(id) || currentMirrors[id] != expected else { continue }
+                    let error = CGConfigureDisplayMirrorOfDisplay(config, id, expected)
                     if error != .success { return error }
                 }
                 return .success
@@ -274,6 +334,9 @@ final class VirtualDisplayService {
             throw failure("原显示器已断开或身份不明确。已恢复可用屏幕，恢复记录将保留，请重新连接后重试。")
         }
         for (record, id) in targets {
+            if let mirror = record.mirrorOf, let expected = mirror == 0 ? 0 : resolved[mirror], CGDisplayMirrorsDisplay(id) != expected {
+                throw failure("原显示器的镜像关系尚未恢复，请重试恢复。")
+            }
             let origin = CGDisplayBounds(id).origin
             guard Int32(origin.x) == record.x, Int32(origin.y) == record.y,
                   record.mode == nil || CGDisplayCopyDisplayMode(id).map({ record.mode!.matches($0) }) == true else {
@@ -298,9 +361,12 @@ final class VirtualDisplayService {
             throw failure("无法开始显示配置：\(error.rawValue)")
         }
         error = body(config)
-        if error == .success { error = CGCompleteDisplayConfiguration(config, .forSession) }
-        if error != .success {
+        if error == .success {
+            error = CGCompleteDisplayConfiguration(config, .forSession)
+        } else {
             CGCancelDisplayConfiguration(config)
+        }
+        if error != .success {
             configurationStalled = error == .cannotComplete || error.rawValue == 1014
             throw failure(configurationStalled ? "系统显示配置无响应，请注销或重启 Mac。" : "显示配置失败：\(error.rawValue)")
         }

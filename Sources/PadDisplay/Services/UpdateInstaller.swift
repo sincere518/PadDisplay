@@ -68,28 +68,117 @@ enum UpdateInstaller {
         } catch { try? FileManager.default.removeItem(at: staged); throw error }
     }
 
-    static func replaceAfterQuit(staged: URL, current: URL) throws {
+    private struct ExpectedStartup: Codable {
+        let path: String
+        let version: String
+        let build: String
+    }
+
+    private static func startupDirectory(for token: UUID) -> URL {
+        FileManager.default.temporaryDirectory.appendingPathComponent("PadDisplay-startup-\(token.uuidString)", isDirectory: true)
+    }
+
+    static func acknowledgeStartup() {
+        let args = ProcessInfo.processInfo.arguments
+        guard let index = args.firstIndex(of: "--update-startup-ack"), args.indices.contains(index + 1),
+              let token = UUID(uuidString: args[index + 1]) else { return }
+        let directory = startupDirectory(for: token)
+        let bundle = Bundle.main
+        do {
+            let metadata = try Data(contentsOf: directory.appendingPathComponent("expected.json"))
+            let expected = try JSONDecoder().decode(ExpectedStartup.self, from: metadata)
+            guard bundle.bundleURL.resolvingSymlinksInPath().path == expected.path,
+                  bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String == expected.version,
+                  String(describing: bundle.object(forInfoDictionaryKey: "CFBundleVersion") ?? "") == expected.build else { return }
+            try String(ProcessInfo.processInfo.processIdentifier).write(to: directory.appendingPathComponent("ready"),
+                                                                       atomically: true, encoding: .utf8)
+        } catch {
+            NSLog("PadDisplay could not acknowledge the updated application: %@", error.localizedDescription)
+        }
+    }
+
+    static func replaceAfterQuit(staged: URL, current: URL, release: ReleaseManifest) throws {
         let backup = current.deletingLastPathComponent().appendingPathComponent(".PadDisplay-backup-\(UUID().uuidString).app")
+        let token = UUID()
+        let acknowledgement = startupDirectory(for: token)
+        try FileManager.default.createDirectory(at: acknowledgement, withIntermediateDirectories: false,
+                                                attributes: [.posixPermissions: 0o700])
         let script = #"""
+        trap 'rm -rf "$5"' EXIT
+        executable="$2/Contents/MacOS/PadDisplay"
+
+        matching_process() {
+          [[ "$1" =~ ^[1-9][0-9]*$ ]] && [[ "$(/bin/ps -ww -p "$1" -o comm= 2>/dev/null)" == "$executable" ]]
+        }
+
+        new_application_running() {
+          local pids status pid path
+          pids=$(/usr/bin/pgrep -x PadDisplay) || { status=$?; [[ "$status" == 1 ]] && return 1; return 2; }
+          for pid in $pids; do
+            if path=$(/bin/ps -ww -p "$pid" -o comm= 2>/dev/null); then
+              [[ "$path" != "$executable" ]] || return 0
+            elif kill -0 "$pid" 2>/dev/null; then
+              return 2
+            fi
+          done
+          return 1
+        }
+
+        restore_original() {
+          if [[ ! -e "$2" && ! -L "$2" ]] && mv "$4" "$2"; then
+            rm -rf "$3"
+            /usr/bin/open -n "$2" --args --update-rollback
+          else
+            /usr/bin/logger -t PadDisplay "Could not restore the old application. Backup retained at $4."
+          fi
+        }
+
         for attempt in {1..300}; do
           kill -0 "$1" 2>/dev/null || break
           sleep 0.3
         done
         if kill -0 "$1" 2>/dev/null; then rm -rf "$3"; exit 1; fi
-        if ! mv "$2" "$4"; then rm -rf "$3"; exit 1; fi
-        if ! mv "$3" "$2"; then mv "$4" "$2"; /usr/bin/open "$2"; exit 1; fi
-        if ! /usr/bin/open -n "$2"; then
-          rm -rf "$2"
-          mv "$4" "$2"
-          /usr/bin/open "$2"
+        if ! mv "$2" "$4"; then
+          rm -rf "$3"
+          /usr/bin/open -n "$2" --args --update-rollback
           exit 1
         fi
-        rm -rf "$4"
+        if ! mv "$3" "$2"; then
+          restore_original "$@"
+          exit 1
+        fi
+        if /usr/bin/open -n "$2" --args --update-startup-ack "$6"; then
+          for attempt in {1..60}; do
+            if [[ -f "$5/ready" ]]; then
+              pid=$(cat "$5/ready")
+              if matching_process "$pid"; then
+                sleep 2
+                if matching_process "$pid"; then rm -rf "$4"; exit 0; fi
+              fi
+            fi
+            sleep 0.25
+          done
+        fi
+        new_application_running
+        if [[ "$?" == 1 ]] && mv "$2" "$3"; then
+          restore_original "$@"
+        else
+          /usr/bin/logger -t PadDisplay "Updated application did not confirm readiness. Backup retained at $4."
+        fi
+        exit 1
         """#
-        let process = Process(); process.executableURL = URL(fileURLWithPath: "/bin/bash")
-        process.arguments = ["-c", script, "PadDisplay-update", String(ProcessInfo.processInfo.processIdentifier), current.path, staged.path, backup.path]
-        process.standardOutput = FileHandle.nullDevice; process.standardError = FileHandle.nullDevice
-        try process.run()
+        do {
+            let expected = ExpectedStartup(path: current.path, version: release.version, build: String(release.build))
+            try JSONEncoder().encode(expected).write(to: acknowledgement.appendingPathComponent("expected.json"), options: .atomic)
+            let process = Process(); process.executableURL = URL(fileURLWithPath: "/bin/bash")
+            process.arguments = ["-c", script, "PadDisplay-update", String(ProcessInfo.processInfo.processIdentifier),
+                                 current.path, staged.path, backup.path, acknowledgement.path, token.uuidString]
+            process.standardOutput = FileHandle.nullDevice; process.standardError = FileHandle.nullDevice
+            try process.run()
+        } catch {
+            try? FileManager.default.removeItem(at: acknowledgement)
+            throw error
+        }
     }
 
     static func run(_ executable: String, _ arguments: [String]) throws -> String {

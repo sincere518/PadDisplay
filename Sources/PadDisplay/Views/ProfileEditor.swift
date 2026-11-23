@@ -7,6 +7,7 @@ struct ProfileEditor: View {
     private let original: DeviceProfile
     private let initialWidth: String
     private let initialHeight: String
+    @State private var originallySaved: DeviceProfile?
     @State private var profile: DeviceProfile
     @State private var width: String
     @State private var height: String
@@ -23,6 +24,7 @@ struct ProfileEditor: View {
         self.model = model
         self.onSave = onSave
         original = profile
+        _originallySaved = State(initialValue: model.profiles.contains { $0.id == profile.id } ? profile : nil)
         initialWidth = profile.spec.width > 0 ? String(profile.spec.width) : ""
         initialHeight = profile.spec.height > 0 ? String(profile.spec.height) : ""
         _profile = State(initialValue: profile)
@@ -44,15 +46,19 @@ struct ProfileEditor: View {
     }
 
     private var validation: String? {
+        if isStale { return "此配置已更改。请关闭后重新打开编辑器，以免覆盖新设置。" }
         let name = profile.name.trimmingCharacters(in: .whitespacesAndNewlines)
         if name.isEmpty { return "填写 UU远程中显示的完整设备名。" }
         if model.profiles.contains(where: { $0.id != profile.id && $0.name == name }) { return "此设备名称已经有配置。" }
         guard let candidate else { return "宽和高需要为整数像素。" }
-        return candidate.enabled ? candidate.validationError : nil
+        if !candidate.enabled, candidate.spec.width == 0, candidate.spec.height == 0 { return nil }
+        return candidate.validationError
     }
 
     private var dirty: Bool { profile != original || width != initialWidth || height != initialHeight }
     private var existing: Bool { model.profiles.contains { $0.id == profile.id } }
+    private var isStale: Bool { model.profiles.first { $0.id == profile.id } != originallySaved }
+    private var showsScreenSettings: Bool { profile.enabled || !width.isEmpty || !height.isEmpty }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -67,7 +73,7 @@ struct ProfileEditor: View {
                         .font(.caption).foregroundStyle(.secondary)
                     Toggle("此设备连入时调整桌面", isOn: $profile.enabled)
                 }
-                if profile.enabled {
+                if showsScreenSettings {
                     Section("屏幕") {
                         Picker("屏幕型号", selection: $presetID) {
                             Text("自定义 / 已保存尺寸").tag("custom")
@@ -152,7 +158,7 @@ struct ProfileEditor: View {
                 HStack {
                     if existing {
                         Button("移除设备…", role: .destructive) { confirmRemoval = true }.buttonStyle(.borderless)
-                            .disabled(model.report.busy)
+                            .disabled(model.report.busy || isStale)
                     }
                     Spacer()
                     Button("取消", action: cancel).appButton().keyboardShortcut(.cancelAction)
@@ -161,12 +167,16 @@ struct ProfileEditor: View {
                 }
             }.padding(20)
         }
-        .frame(width: 600, height: profile.enabled ? 740 : 400)
+        .frame(width: 600, height: showsScreenSettings ? 740 : 400)
         .interactiveDismissDisabled(dirty)
         .onAppear { if !existing { focus = .name } }
         .onSubmit(save)
         .confirmationDialog("移除此设备配置？", isPresented: $confirmRemoval) {
-            Button("移除", role: .destructive) { model.remove(profile.id); dismiss() }
+            Button("移除", role: .destructive) {
+                guard !isStale else { return }
+                model.remove(profile.id)
+                dismiss()
+            }
         } message: { Text("再次连入时，需要重新配置此设备。") }
         .alert("保存对设备配置的更改？", isPresented: $confirmDiscard) {
             Button("保存", action: save).disabled(validation != nil || model.report.busy)
@@ -181,6 +191,7 @@ struct ProfileEditor: View {
     }
 
     private func save() {
+        guard !model.report.busy else { return }
         guard validation == nil, let candidate else {
             if profile.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
                 model.profiles.contains(where: { $0.id != profile.id && $0.name == profile.name.trimmingCharacters(in: .whitespacesAndNewlines) }) {

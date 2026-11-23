@@ -7,8 +7,8 @@ MODE="${1:-run}"
 CONFIGURATION="${CONFIGURATION:-debug}"
 APP_BUNDLE="$ROOT_DIR/dist/PadDisplay.app"
 APP_BINARY="$APP_BUNDLE/Contents/MacOS/PadDisplay"
-VERSION=0.4.0
-BUILD=9
+VERSION=0.4.1
+BUILD=10
 if [[ -z "${DEVELOPER_DIR:-}" && -d /Applications/Xcode-beta.app/Contents/Developer ]]; then
   export DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer
 fi
@@ -21,20 +21,30 @@ case "$MODE" in
   --build|--package) ;;
   *) echo "Usage: $0 [run|--build|--package|--debug|--logs|--telemetry|--verify]" >&2; exit 2 ;;
 esac
-STAGED_PIDS=()
-for pid in $(pgrep -x PadDisplay || true); do
-  process_path="$(ps -p "$pid" -o comm= 2>/dev/null || true)"
-  if [[ "$process_path" == "$APP_BINARY" ]]; then
-    if [[ "$LAUNCH" == false ]]; then
-      echo "请先退出项目目录中的 PadDisplay，再重新构建或打包。" >&2
-      exit 1
-    fi
-    STAGED_PIDS+=("$pid")
-  elif [[ "$LAUNCH" == true ]]; then
-    echo "其他位置的 PadDisplay 正在运行，请先在该应用中退出；脚本不会结束它。" >&2
+check_running_apps() {
+  local pids status=0 pid process_path
+  pids=$(/usr/bin/pgrep -x PadDisplay) || status=$?
+  if [[ "$status" != 0 ]]; then
+    if [[ "$status" == 1 ]]; then return 0; fi
+    echo "无法确认 PadDisplay 的运行状态。" >&2
     exit 1
   fi
-done
+  for pid in $pids; do
+    if ! process_path=$(/bin/ps -ww -p "$pid" -o comm= 2>/dev/null); then
+      if ! kill -0 "$pid" 2>/dev/null; then continue; fi
+      echo "无法确认当前 PadDisplay 的应用路径。" >&2
+      exit 1
+    fi
+    if [[ "$process_path" == "$APP_BINARY" ]]; then
+      echo "请先退出项目目录中的 PadDisplay，再重新构建或打包。" >&2
+      exit 1
+    elif [[ "$LAUNCH" == true ]]; then
+      echo "其他位置的 PadDisplay 正在运行，请先在该应用中退出。" >&2
+      exit 1
+    fi
+  done
+}
+check_running_apps
 SIGNING_IDENTITY="${SIGN_IDENTITY:-}"
 if [[ -z "$SIGNING_IDENTITY" && -f "$ROOT_DIR/script/signing.identity.local" ]]; then
   IFS= read -r SIGNING_IDENTITY < "$ROOT_DIR/script/signing.identity.local" || true
@@ -48,24 +58,16 @@ if ! security find-identity -v -p codesigning | awk -v identity="$SIGNING_IDENTI
   echo "配置的签名证书不可用，请检查钥匙串中的有效证书及对应私钥。" >&2
   exit 1
 fi
-if [[ "${#STAGED_PIDS[@]}" -gt 0 ]]; then
-  for pid in "${STAGED_PIDS[@]}"; do
-    kill -TERM "$pid"
-    for attempt in {1..15}; do
-      [[ "$(ps -p "$pid" -o comm= 2>/dev/null || true)" == "$APP_BINARY" ]] || break
-      sleep 1
-    done
-    if [[ "$(ps -p "$pid" -o comm= 2>/dev/null || true)" == "$APP_BINARY" ]]; then
-      echo "项目应用尚未完成退出，请稍后重试。" >&2
-      exit 1
-    fi
-  done
-fi
 if [[ "$MODE" == "--package" ]]; then CONFIGURATION=release; fi
 xcrun swift build --build-system native --disable-sandbox --scratch-path build/swift-native \
   --cache-path build/swift-cache -c "$CONFIGURATION" --product PadDisplay
 BIN_DIR="$(xcrun swift build --build-system native --disable-sandbox --scratch-path build/swift-native \
   --cache-path build/swift-cache -c "$CONFIGURATION" --show-bin-path)"
+if [[ "$MODE" == "--package" && "$(/usr/bin/lipo -archs "$BIN_DIR/PadDisplay")" != arm64 ]]; then
+  echo "发布安装包要求 arm64 应用，请用 Apple Silicon 的原生 Xcode 工具链打包。" >&2
+  exit 1
+fi
+check_running_apps
 rm -rf "$APP_BUNDLE"
 mkdir -p "$APP_BUNDLE/Contents/MacOS" "$APP_BUNDLE/Contents/Resources"
 cp "$BIN_DIR/PadDisplay" "$APP_BINARY"

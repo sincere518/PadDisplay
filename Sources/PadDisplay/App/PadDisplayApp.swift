@@ -48,6 +48,7 @@ import PadDisplayCore
 
 @MainActor final class AppDelegate: NSObject, NSApplicationDelegate {
     private var terminating = false
+    private var waitingForDesktop = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let args = CommandLine.arguments
@@ -74,18 +75,25 @@ import PadDisplayCore
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
         AppController.shared.start()
+        DispatchQueue.main.async { [weak self] in
+            guard let self, !self.terminating, !self.waitingForDesktop else { return }
+            UpdateInstaller.acknowledgeStartup()
+            if args.contains("--update-rollback") { AppController.shared.updates.noteRollback() }
+        }
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         if terminating { return .terminateNow }
-        terminating = true
-        var finished = false
-        let finish = {
-            guard !finished else { return }
-            finished = true
-            NSApp.terminate(nil)
+        guard !waitingForDesktop else { return .terminateCancel }
+        waitingForDesktop = true
+        let finish = { [weak self] in
+            guard let self, self.waitingForDesktop else { return }
+            self.waitingForDesktop = false
+            self.terminating = true
+            sender.terminate(nil)
         }
-        AppController.shared.shutdown(finish)
+        // 先返回事件循环，让恢复回调能在主队列上完成。
+        DispatchQueue.main.async { AppController.shared.shutdown(finish) }
         DispatchQueue.main.asyncAfter(deadline: .now() + 20) { finish() }
         return .terminateCancel
     }

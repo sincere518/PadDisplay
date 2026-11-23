@@ -84,6 +84,7 @@ struct ContentView: View {
                     Text("自动匹配").font(.callout)
                     Toggle("自动匹配设备", isOn: $model.automatic).labelsHidden()
                         .accessibilityLabel("自动匹配设备").toggleStyle(.switch).controlSize(.small)
+                        .disabled(model.shuttingDown)
                         .help("按当前单个连接设备的配置自动调整屏幕。")
                 }
             }

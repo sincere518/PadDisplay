@@ -10,7 +10,7 @@ struct HealthItem: Codable, Identifiable {
     let status: String
 }
 
-struct HealthReport: Codable {
+struct HealthReport: Encodable {
     let date: Date
     let version: String
     let system: String
@@ -18,7 +18,7 @@ struct HealthReport: Codable {
     let screens: [ScreenDiagnostic]
 }
 
-struct ScreenDiagnostic: Codable {
+struct ScreenDiagnostic: Encodable {
     let id: UInt32
     let main: Bool
     let vendor: UInt32
@@ -30,6 +30,11 @@ struct ScreenDiagnostic: Codable {
     let refreshRate: Double
     let x: Int
     let y: Int
+
+    // The serial is needed to match the active virtual screen, not to share a report.
+    private enum CodingKeys: String, CodingKey {
+        case id, main, vendor, pixelWidth, pixelHeight, logicalWidth, logicalHeight, refreshRate, x, y
+    }
 }
 
 enum Diagnostics {

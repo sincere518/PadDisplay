@@ -2,7 +2,7 @@
 
 **让远程桌面，刚好适合你的屏幕。**
 
-![Published version 0.4.0](https://img.shields.io/badge/release-0.4.0-007AFF)
+![Published version 0.4.1](https://img.shields.io/badge/release-0.4.1-007AFF)
 ![macOS 14 or later](https://img.shields.io/badge/macOS-14%2B-24292F?logo=apple)
 ![Apple Silicon](https://img.shields.io/badge/architecture-Apple_Silicon-555555)
 ![SwiftUI](https://img.shields.io/badge/UI-SwiftUI-F05138?logo=swift&logoColor=white)
@@ -89,14 +89,14 @@ iPhone 的机身示意固定竖直，灵动岛位于顶部。实际远程桌面�
 
 ### 1. 获取应用
 
-当前版本为 **[0.4.0](https://github.com/sincere518/PadDisplay/releases/tag/v0.4.0)**。下载 [DMG 安装包](https://github.com/sincere518/PadDisplay/releases/download/v0.4.0/PadDisplay-0.4.0-arm64.dmg)，或使用 [ZIP 安装包](https://github.com/sincere518/PadDisplay/releases/download/v0.4.0/PadDisplay-0.4.0-arm64.zip)。也可按[从源码构建](#从源码构建)生成安装包。
+当前发布版本为 **[0.4.1](https://github.com/sincere518/PadDisplay/releases/tag/v0.4.1)**。下载 [DMG 安装包](https://github.com/sincere518/PadDisplay/releases/download/v0.4.1/PadDisplay-0.4.1-arm64.dmg)，或使用 [ZIP 安装包](https://github.com/sincere518/PadDisplay/releases/download/v0.4.1/PadDisplay-0.4.1-arm64.zip)。也可按[从源码构建](#从源码构建)生成安装包。
 
 正式打包产物为：
 
 ```text
 dist/PadDisplay.app
-dist/PadDisplay-0.4.0-arm64.dmg
-dist/PadDisplay-0.4.0-arm64.zip
+dist/PadDisplay-0.4.1-arm64.dmg
+dist/PadDisplay-0.4.1-arm64.zip
 dist/PadDisplay-update.json
 dist/SHA256SUMS.txt
 ```
@@ -339,6 +339,7 @@ PadDisplay 通过 macOS 辅助功能读取 UU界面里的连接设备名称和�
 
 | 版本 | 主要变化 |
 | --- | --- |
+| 0.4.1 | 改善设备切换、桌面恢复、连接识别和 MacBook 匹配，修复配置合并和保存，更新启动失败时自动回退 |
 | 0.4.0 | 增加 21 项 MacBook 原生分辨率预设、机型名与型号标识符自动匹配、昵称配置和横屏笔记本预览 |
 | 0.3.1 | 修复重连发现缓存与菜单轮询；实体屏关闭时可继续使用远程主屏，保留恢复记录 |
 | 0.3.0 | 固定屏幕身份、显示模式与窗口恢复、显示／区域预设、主屏／扩展策略、收藏快捷操作、引导诊断、配置备份、DMG 与更新 |

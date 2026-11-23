@@ -37,18 +37,22 @@ public struct ConnectionTracker {
     public mutating func update(_ observed: [String]?, reportedCount: Int?, now: Date) -> [String] {
         if let observed, !observed.isEmpty {
             names = Array(Set(observed)).sorted()
-            controllerCount = max(reportedCount ?? names.count, names.count)
+            controllerCount = max(reportedCount ?? 0, observed.count)
             lastConfirmed = now
             emptySince = nil
         } else if observed != nil, (reportedCount ?? 0) == 0 {
-            if emptySince == nil { emptySince = now }
-            if now.timeIntervalSince(emptySince!) >= 3 { names = []; controllerCount = 0 }
-        } else if now.timeIntervalSince(lastConfirmed) >= 15 {
-            names = []
-            controllerCount = reportedCount ?? 0
-        } else if let reportedCount, reportedCount > 0 {
-            if controllerCount != reportedCount { names = [] }
-            controllerCount = reportedCount
+            let since = emptySince ?? now
+            emptySince = since
+            if now.timeIntervalSince(since) >= 3 { names = []; controllerCount = 0 }
+        } else {
+            emptySince = nil
+            if now.timeIntervalSince(lastConfirmed) >= 15 {
+                names = []
+                controllerCount = reportedCount ?? 0
+            } else if let reportedCount, reportedCount > 0 {
+                if controllerCount != reportedCount { names = [] }
+                controllerCount = reportedCount
+            }
         }
         return names
     }

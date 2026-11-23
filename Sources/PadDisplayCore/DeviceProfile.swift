@@ -82,8 +82,8 @@ public struct DeviceProfile: Codable, Identifiable, Equatable {
     }
 
     public func applyingSizeInput(width: String, height: String) -> DeviceProfile? {
-        guard enabled else { return self }
-        guard let w = Int(width), let h = Int(height) else { return nil }
+        let emptyDraft = !enabled && width.isEmpty && height.isEmpty
+        guard let w = emptyDraft ? 0 : Int(width), let h = emptyDraft ? 0 : Int(height) else { return nil }
         var value = self
         value.spec.width = w
         value.spec.height = h

@@ -67,6 +67,12 @@ extension ScreenPreset {
     private static let macBookLabels = Dictionary(uniqueKeysWithValues: macBooks.map {
         (normalizedMacBookName($0.label), $0)
     })
+    // Apple 机型列表中的完整名称。有些名称不写屏幕尺寸。
+    private static let macBookAliases = [
+        "macbook air(m2,2022)": "mac14,2",
+        "macbook air(mid 2009)": "macbookair2,1"
+    ]
+    private static let chipSeparator = #"[\s._/·:(-]*"#
 
     private static let macBookFamily = #"^(?:(?:11|12|13(?:\.[36])?|14(?:\.2)?|15(?:\.3)?|16(?:\.[23])?|17)\s*(?:-?\s*inch|英寸|寸|\")\s*)?macbook(?:\s+(air|pro|neo))?(?=$|[\s(,])"#
 
@@ -83,7 +89,11 @@ extension ScreenPreset {
         let family = n[familyMatch].split(separator: " ").last ?? ""
         let sizes = Set(matchingParts(#"(?<![a-z0-9.])(?:11|12|13(?:\.[36])?|14(?:\.2)?|15(?:\.3)?|16(?:\.[23])?|17)(?![0-9.])"#, in: n))
         let years = Set(matchingParts(#"(?<![a-z0-9])20[0-9]{2}(?![a-z0-9])"#, in: n))
-        let chips = Set(matchingParts(#"(?<![a-z0-9])m[0-9]+(?:\s+(?:pro|max|ultra))?(?![a-z0-9])"#, in: n))
+        let chipPattern = #"(?<![a-z0-9])m[0-9]+(?:"# + chipSeparator + #"(?:pro(?!led)|max|ultra)[a-z0-9]*)?(?![a-z0-9])"#
+        let chips = Set(matchingParts(chipPattern, in: n).map {
+            $0.replacingOccurrences(of: #"(?<=[0-9])"# + chipSeparator + #"(?=[a-z])"#,
+                                    with: " ", options: .regularExpression)
+        })
         let m5Variants = chips == ["m5 pro", "m5 max"]
         guard sizes.count <= 1, years.count <= 1, chips.count <= 1 || m5Variants else { return nil }
         let inch = sizes.first.flatMap(Double.init).map(Int.init)
@@ -171,7 +181,8 @@ extension ScreenPreset {
     }
 
     private static func macBookIdentifier(_ name: String) -> ScreenPreset? {
-        let identifier = name.replacingOccurrences(of: #"\s*,\s*"#, with: ",", options: .regularExpression)
+        let compactName = name.replacingOccurrences(of: #"\s*([(),])\s*"#, with: "$1", options: .regularExpression)
+        let identifier = macBookAliases[compactName] ?? compactName
         return macBookScreens.first { $0.identifiers.contains(identifier) }?.preset
     }
 

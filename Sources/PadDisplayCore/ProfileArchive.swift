@@ -7,14 +7,23 @@ public struct ProfileArchive: Codable {
     public init(profiles: [DeviceProfile]) { format = 1; self.profiles = profiles }
 
     public func merged(with existing: [DeviceProfile], replace: Bool) throws -> [DeviceProfile] {
-        var next = replace ? profiles : existing
-        if !replace {
-            for var profile in profiles {
-                if let index = next.firstIndex(where: { $0.name == profile.name || $0.id == profile.id }) {
-                    profile.id = next[index].id
-                    next[index] = profile
-                } else { next.append(profile) }
+        _ = try Self.read(JSONEncoder().encode(self))
+        if replace { return profiles }
+        var next = existing
+        var updated = Set<Int>()
+        for var profile in profiles {
+            let matches = existing.indices.filter {
+                existing[$0].name == profile.name || existing[$0].id == profile.id
             }
+            guard matches.count <= 1 else {
+                throw Self.invalid("设备「\(profile.name)」的名称和屏幕身份对应不同的本机配置，无法合并。")
+            }
+            guard let index = matches.first else { next.append(profile); continue }
+            guard updated.insert(index).inserted else {
+                throw Self.invalid("导入文件中有多台设备对应同一项本机配置，无法合并。")
+            }
+            profile.id = existing[index].id
+            next[index] = profile
         }
         _ = try Self.read(JSONEncoder().encode(Self(profiles: next)))
         return next

@@ -16,6 +16,9 @@ final class AppController {
     private var manual: DisplayRequest?
     private var suspended = false
     private var started = false
+    private var pollInProgress = false
+    private var pollingRun = UUID()
+    private(set) var shuttingDown = false
     private var discovered: Set<String> = []
     private let shortcuts = ShortcutService()
     let updates = UpdateService()
@@ -52,7 +55,9 @@ final class AppController {
     var connectionCount: Int { tracker.controllerCount }
     var favorites: [DeviceProfile] { Array(profiles.filter { $0.favorite && $0.enabled && $0.validationError == nil }.prefix(9)) }
     var currentProfile: DeviceProfile? {
-        profiles.first { $0.id == report.active?.profileID } ?? profiles.first { controllers.contains($0.name) }
+        if let active = profiles.first(where: { $0.id == report.active?.profileID }) { return active }
+        guard connectionCount == 1, let name = controllers.first else { return nil }
+        return profiles.first { $0.name == name }
     }
     var sessionState: SessionState {
         if report.busy { return .working }
@@ -88,7 +93,9 @@ final class AppController {
 
     func start() {
         guard !started else { return }
+        shuttingDown = false
         started = true
+        pollingRun = UUID()
         display.onChange = { [weak self] in self?.report = $0 }
         display.setWindowRestoration(restoreWindowPositions)
         display.recover()
@@ -104,13 +111,19 @@ final class AppController {
 
     private func poll() {
         permissionGranted = UUConnectionReader.authorized
+        guard !pollInProgress else { return }
+        pollInProgress = true
+        let run = pollingRun
         reader.sample { [weak self] reading in
-            guard let self, self.started else { return }
+            guard let self else { return }
+            self.pollInProgress = false
+            guard self.started, self.pollingRun == run else { return }
             self.received(reading)
         }
     }
 
     @discardableResult func save(_ profile: DeviceProfile) -> Bool {
+        guard !shuttingDown else { return false }
         var profile = profile
         profile.name = profile.name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !profile.name.isEmpty, profile.name.count <= 128 else { notice = "请输入不超过 128 字的 UU远程设备名称。"; return false }
@@ -139,6 +152,7 @@ final class AppController {
     }
 
     func remove(_ id: UUID) {
+        guard !shuttingDown else { return }
         if manual?.profileID == id { manual = nil }
         profiles.removeAll { $0.id == id }
         persist()
@@ -146,6 +160,7 @@ final class AppController {
     }
 
     func useManually(_ profile: DeviceProfile) {
+        guard !shuttingDown else { return }
         guard !companionRunning else { notice = "请先退出其他显示助手，避免同时调整显示器。"; return }
         guard let saved = profiles.first(where: { $0.id == profile.id }) else { notice = "此设备配置已不存在。"; return }
         guard saved.enabled, saved.validationError == nil else { return }
@@ -155,13 +170,17 @@ final class AppController {
     }
 
     func restore() {
+        guard !shuttingDown else { return }
         manual = nil
         suspended = true
         notice = nil
         display.request(nil, retry: true)
     }
 
-    func resumeAutomatic() { automatic = true }
+    func resumeAutomatic() {
+        guard !shuttingDown else { return }
+        automatic = true
+    }
 
     func setDensity(_ density: DesktopDensity, for profile: DeviceProfile) { updateProfile(profile.id) { $0.density = density } }
     func setRegion(_ region: DisplayRegion, for profile: DeviceProfile) { updateProfile(profile.id) { $0.region = region } }
@@ -175,6 +194,7 @@ final class AppController {
     func completeSetup() { needsSetup = false; preferences.set(true, forKey: "onboardingComplete") }
 
     private func updateDisplay() {
+        guard !shuttingDown else { return }
         if companionRunning {
             connectionStatus = "请先退出其他显示助手，避免同时调整显示器"
             display.request(nil)
@@ -218,6 +238,7 @@ final class AppController {
     }
 
     func shutdown(_ completion: @escaping () -> Void) {
+        shuttingDown = true
         timer?.invalidate()
         started = false
         shortcuts.stop()
@@ -231,8 +252,11 @@ final class AppController {
         connectionStatus = reading.detail
         for name in controllers where !discovered.contains(name) {
             discovered.insert(name)
-            if profiles.count < 100, !profiles.contains(where: { $0.name == name }), let preset = ScreenPreset.suggested(for: name) {
-                profiles.append(DeviceProfile(name: name, spec: preset.spec, presetID: preset.id))
+            if profiles.count < 100, name.count <= 128, !profiles.contains(where: { $0.name == name }),
+               let preset = ScreenPreset.suggested(for: name) {
+                let profile = DeviceProfile(name: name, spec: preset.spec, presetID: preset.id)
+                guard !profiles.contains(where: { $0.displaySerial == profile.displaySerial }) else { continue }
+                profiles.append(profile)
                 persist()
             }
         }
@@ -254,7 +278,7 @@ final class AppController {
     }
 
     func handleShortcut(_ url: URL) {
-        guard url.scheme == "paddisplay", !report.busy else { return }
+        guard url.scheme == "paddisplay", !report.busy, !shuttingDown else { return }
         switch url.host {
         case "restore": restore()
         case "automatic": resumeAutomatic()
@@ -323,7 +347,7 @@ final class AppController {
     }
 
     func acceptImport(replace: Bool) {
-        guard let incoming = pendingImport else { return }
+        guard !shuttingDown, let incoming = pendingImport else { return }
         do {
             let next = try incoming.merged(with: profiles, replace: replace)
             try FileManager.default.createDirectory(at: VirtualDisplayService.supportDirectory, withIntermediateDirectories: true)
@@ -336,6 +360,7 @@ final class AppController {
     private var backupURL: URL { VirtualDisplayService.supportDirectory.appendingPathComponent("profiles-before-import.json") }
     var hasImportBackup: Bool { FileManager.default.fileExists(atPath: backupURL.path) }
     func recoverImportBackup() {
+        guard !shuttingDown else { return }
         do {
             let size = try backupURL.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
             guard size <= 1_048_576 else { throw NSError(domain: "PadDisplay", code: 1, userInfo: [NSLocalizedDescriptionKey: "配置备份不能超过 1 MB。"]) }
